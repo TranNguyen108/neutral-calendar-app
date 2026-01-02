@@ -14,33 +14,60 @@ class StorageService extends GetxService {
 
   // Tasks
   List<Task> getTasks() {
-    final tasksJson = _box.read<List>('tasks') ?? [];
-    return tasksJson.map((json) => Task.fromJson(json)).toList();
+    try {
+      final tasksJson = _box.read<List>('tasks') ?? [];
+      return tasksJson.map((json) => Task.fromJson(json)).toList();
+    } catch (e) {
+      Get.log('Error loading tasks: $e', isError: true);
+      return [];
+    }
   }
 
   Future<void> saveTasks(List<Task> tasks) async {
-    await _box.write('tasks', tasks.map((task) => task.toJson()).toList());
+    try {
+      await _box.write('tasks', tasks.map((task) => task.toJson()).toList());
+    } catch (e) {
+      Get.log('Error saving tasks: $e', isError: true);
+      rethrow;
+    }
   }
 
   Future<void> addTask(Task task) async {
-    final tasks = getTasks();
-    tasks.add(task);
-    await saveTasks(tasks);
+    try {
+      final tasks = getTasks();
+      tasks.add(task);
+      await saveTasks(tasks);
+    } catch (e) {
+      Get.log('Error adding task: $e', isError: true);
+      rethrow;
+    }
   }
 
   Future<void> updateTask(Task task) async {
-    final tasks = getTasks();
-    final index = tasks.indexWhere((t) => t.id == task.id);
-    if (index != -1) {
-      tasks[index] = task;
-      await saveTasks(tasks);
+    try {
+      final tasks = getTasks();
+      final index = tasks.indexWhere((t) => t.id == task.id);
+      if (index != -1) {
+        tasks[index] = task;
+        await saveTasks(tasks);
+      } else {
+        throw Exception('Task not found: ${task.id}');
+      }
+    } catch (e) {
+      Get.log('Error updating task: $e', isError: true);
+      rethrow;
     }
   }
 
   Future<void> deleteTask(String taskId) async {
-    final tasks = getTasks();
-    tasks.removeWhere((t) => t.id == taskId);
-    await saveTasks(tasks);
+    try {
+      final tasks = getTasks();
+      tasks.removeWhere((t) => t.id == taskId);
+      await saveTasks(tasks);
+    } catch (e) {
+      Get.log('Error deleting task: $e', isError: true);
+      rethrow;
+    }
   }
 
   // Search & Filter

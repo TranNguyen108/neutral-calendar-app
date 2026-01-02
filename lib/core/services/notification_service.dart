@@ -49,76 +49,89 @@ class NotificationService extends GetxService {
 
   /// Schedule a notification for a task
   Future<void> scheduleTaskReminder(Task task) async {
-    if (!_initialized) {
-      await init();
+    try {
+      if (!_initialized) {
+        await init();
+      }
+
+      // Only schedule if task has a reminder and start time
+      if (task.reminderMinutesBefore == null || task.startTime == null) {
+        return;
+      }
+
+      // Don't schedule notifications for completed tasks
+      if (task.status == TaskStatus.done) {
+        return;
+      }
+
+      // Calculate notification time
+      final notificationTime = task.startTime!
+          .subtract(Duration(minutes: task.reminderMinutesBefore!));
+
+      // Don't schedule notifications in the past
+      if (notificationTime.isBefore(DateTime.now())) {
+        return;
+      }
+
+      const androidDetails = AndroidNotificationDetails(
+        'task_reminders',
+        'Task Reminders',
+        channelDescription: 'Notifications for upcoming tasks',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notifications.zonedSchedule(
+        task.id.hashCode, // Use task ID hash as notification ID
+        'Upcoming Task: ${task.title}',
+        task.note ?? 'Your task is starting soon',
+        tz.TZDateTime.from(notificationTime, tz.local),
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: task.id,
+      );
+    } catch (e) {
+      Get.log('Error scheduling notification: $e', isError: true);
+      // Don't rethrow - notification failures shouldn't break task creation
     }
-
-    // Only schedule if task has a reminder and start time
-    if (task.reminderMinutesBefore == null || task.startTime == null) {
-      return;
-    }
-
-    // Don't schedule notifications for completed tasks
-    if (task.status == TaskStatus.done) {
-      return;
-    }
-
-    // Calculate notification time
-    final notificationTime = task.startTime!
-        .subtract(Duration(minutes: task.reminderMinutesBefore!));
-
-    // Don't schedule notifications in the past
-    if (notificationTime.isBefore(DateTime.now())) {
-      return;
-    }
-
-    const androidDetails = AndroidNotificationDetails(
-      'task_reminders',
-      'Task Reminders',
-      channelDescription: 'Notifications for upcoming tasks',
-      importance: Importance.high,
-      priority: Priority.high,
-      showWhen: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _notifications.zonedSchedule(
-      task.id.hashCode, // Use task ID hash as notification ID
-      'Upcoming Task: ${task.title}',
-      task.note ?? 'Your task is starting soon',
-      tz.TZDateTime.from(notificationTime, tz.local),
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: task.id,
-    );
   }
 
   /// Cancel a specific task's notification
   Future<void> cancelTaskReminder(String taskId) async {
-    if (!_initialized) {
-      await init();
+    try {
+      if (!_initialized) {
+        await init();
+      }
+      await _notifications.cancel(taskId.hashCode);
+    } catch (e) {
+      Get.log('Error cancelling notification: $e', isError: true);
     }
-    await _notifications.cancel(taskId.hashCode);
   }
 
   /// Cancel all notifications
   Future<void> cancelAllNotifications() async {
-    if (!_initialized) {
-      await init();
+    try {
+      if (!_initialized) {
+        await init();
+      }
+      await _notifications.cancelAll();
+    } catch (e) {
+      Get.log('Error cancelling all notifications: $e', isError: true);
     }
-    await _notifications.cancelAll();
   }
 
   /// Request notification permissions (primarily for iOS)

@@ -72,13 +72,15 @@ class Task {
     int? recurrenceInterval,
     DateTime? recurrenceEndDate,
     int? reminderMinutesBefore,
+    bool clearStartTime = false,
+    bool clearEndTime = false,
   }) {
     return Task(
       id: id ?? this.id,
       title: title ?? this.title,
       date: date ?? this.date,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      startTime: clearStartTime ? null : (startTime ?? this.startTime),
+      endTime: clearEndTime ? null : (endTime ?? this.endTime),
       priority: priority ?? this.priority,
       status: status ?? this.status,
       category: category ?? this.category,
