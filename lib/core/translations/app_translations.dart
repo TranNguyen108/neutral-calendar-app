@@ -66,6 +66,15 @@ class AppTranslations extends Translations {
           'reschedule_tomorrow': 'Reschedule to Tomorrow',
           'delay_one_hour': 'Delay 1 Hour',
           'enter_title_error': 'Please enter a title',
+          'enter_note': 'Enter note',
+          'tomorrow': 'Tomorrow',
+          '3_days_later': '3 Days',
+          'this_sunday': 'Sunday',
+          'choose_date': 'Choose',
+          'add_category': 'Add',
+          'add_new_category': 'New Category',
+          'enter_category_name': 'Enter category name',
+          'add': 'Add',
 
           // Task Detail
           'task_detail': 'Task Detail',
@@ -305,7 +314,15 @@ class AppTranslations extends Translations {
           'reschedule_tomorrow': 'Lên lịch ngày mai',
           'delay_one_hour': 'Hoãn 1 giờ',
           'enter_title_error': 'Vui lòng nhập tiêu đề',
-
+          'enter_note': 'Nhập ghi chú',
+          'tomorrow': 'Ngày mai',
+          '3_days_later': '3 Ngày',
+          'this_sunday': 'Chủ nhật',
+          'choose_date': 'Chọn',
+          'add_category': 'Thêm',
+          'add_new_category': 'Danh mục mới',
+          'enter_category_name': 'Nhập tên danh mục',
+          'add': 'Thêm',
           // Task Detail
           'task_detail': 'Chi tiết công việc',
           'delete_task': 'Xóa việc',

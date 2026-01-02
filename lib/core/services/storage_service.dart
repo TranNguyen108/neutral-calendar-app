@@ -226,4 +226,13 @@ class StorageService extends GetxService {
   Future<void> saveBehaviorLogs(List<Map<String, dynamic>> logs) async {
     await _box.write('behaviorLogs', logs);
   }
+
+  // Generic read/write for custom data
+  T? read<T>(String key) {
+    return _box.read<T>(key);
+  }
+
+  Future<void> write<T>(String key, T value) async {
+    await _box.write(key, value);
+  }
 }

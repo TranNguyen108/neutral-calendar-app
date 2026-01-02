@@ -153,24 +153,10 @@ class TodayView extends GetView<TodayController> {
               ],
             ),
           )),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'quick_add',
-            onPressed: () => QuickAddBottomSheet.show(),
-            child: const Icon(Icons.bolt, size: 20),
-            tooltip: 'Quick Add',
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton(
-            heroTag: 'full_add',
-            onPressed: () {
-              Get.toNamed(AppRoutes.ADD_TASK);
-            },
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => QuickAddBottomSheet.show(),
+        child: const Icon(Icons.add),
+        tooltip: 'quick_add'.tr,
       ),
     );
   }

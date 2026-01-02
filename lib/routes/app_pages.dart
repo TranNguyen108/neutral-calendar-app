@@ -1,8 +1,6 @@
 import 'package:get/get.dart';
 import '../modules/splash/splash_module.dart';
 import '../modules/main/main_module.dart';
-import '../modules/add_task/bindings/add_task_binding.dart';
-import '../modules/add_task/views/add_task_view.dart';
 import '../modules/task_detail/views/task_detail_view.dart';
 import '../modules/report/bindings/report_binding.dart';
 import '../modules/report/views/report_view.dart';
@@ -13,11 +11,6 @@ class AppPages {
   static final pages = [
     ...SplashModule.routes,
     ...MainModule.routes,
-    GetPage(
-      name: AppRoutes.ADD_TASK,
-      page: () => const AddTaskView(),
-      binding: AddTaskBinding(),
-    ),
     GetPage(
       name: AppRoutes.TASK_DETAIL,
       page: () => const TaskDetailView(),

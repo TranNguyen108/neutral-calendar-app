@@ -5,7 +5,6 @@ import '../../../core/models/task.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/recurrence_service.dart';
 import '../../../core/services/notification_service.dart';
-import '../../../routes/app_routes.dart';
 import '../../today/controllers/today_controller.dart';
 import '../../calendar/controllers/calendar_controller.dart';
 
@@ -23,12 +22,6 @@ class TaskDetailView extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Task Detail'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Get.toNamed(AppRoutes.ADD_TASK, arguments: task);
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.delete),
             onPressed: () {

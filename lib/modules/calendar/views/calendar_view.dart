@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../controllers/calendar_controller.dart';
 import '../../../core/models/task.dart';
 import '../../../routes/app_routes.dart';
+import '../../quick_add/views/quick_add_bottom_sheet.dart';
 
 class CalendarView extends GetView<CalendarController> {
   const CalendarView({super.key});
@@ -58,9 +59,7 @@ class CalendarView extends GetView<CalendarController> {
             ],
           )),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.toNamed(AppRoutes.ADD_TASK);
-        },
+        onPressed: () => QuickAddBottomSheet.show(),
         child: const Icon(Icons.add),
       ),
     );
