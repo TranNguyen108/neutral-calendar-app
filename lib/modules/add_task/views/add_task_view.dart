@@ -207,7 +207,7 @@ class AddTaskView extends GetView<AddTaskController> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.grey.shade100,
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
@@ -237,7 +237,7 @@ class AddTaskView extends GetView<AddTaskController> {
         controller.selectedCategory.value = selected ? category : null;
       },
       backgroundColor: Colors.grey.shade100,
-      selectedColor: color.withOpacity(0.2),
+      selectedColor: color.withValues(alpha: 0.2),
       checkmarkColor: color,
       labelStyle: TextStyle(
         color: isSelected ? color : Colors.grey.shade700,
@@ -259,7 +259,7 @@ class AddTaskView extends GetView<AddTaskController> {
         controller.selectedRecurrence.value = rule;
       },
       backgroundColor: Colors.grey.shade100,
-      selectedColor: Colors.blue.withOpacity(0.2),
+      selectedColor: Colors.blue.withValues(alpha: 0.2),
       checkmarkColor: Colors.blue,
       labelStyle: TextStyle(
         color: isSelected ? Colors.blue : Colors.grey.shade700,
@@ -281,7 +281,7 @@ class AddTaskView extends GetView<AddTaskController> {
         controller.selectedReminder.value = minutes;
       },
       backgroundColor: Colors.grey.shade100,
-      selectedColor: Colors.orange.withOpacity(0.2),
+      selectedColor: Colors.orange.withValues(alpha: 0.2),
       checkmarkColor: Colors.orange,
       labelStyle: TextStyle(
         color: isSelected ? Colors.orange : Colors.grey.shade700,

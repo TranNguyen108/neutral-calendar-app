@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/models/task.dart';
 import '../controllers/focus_controller.dart';
 
 class FocusView extends GetView<FocusController> {
@@ -44,6 +45,55 @@ class FocusView extends GetView<FocusController> {
                     ),
                   )),
               const SizedBox(height: 60),
+              // Selected Task Display
+              Obx(() {
+                if (controller.selectedTask.value != null) {
+                  final task = controller.selectedTask.value!;
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.task_alt, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                task.title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (task.totalFocusMinutes > 0)
+                                Text(
+                                  '${task.totalFocusMinutes} min focused',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => controller.selectedTask.value = null,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+              const SizedBox(height: 20),
               Obx(() => Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -86,6 +136,18 @@ class FocusView extends GetView<FocusController> {
                       ),
                     ],
                   )),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => _showTaskSelector(context),
+                icon: const Icon(Icons.link),
+                label: Text('select_task'.tr),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -93,80 +155,79 @@ class FocusView extends GetView<FocusController> {
     );
   }
 
-  // TODO: Wire this up to a \"Select Task\" button in the UI
-  // void _showTaskSelector(BuildContext context) {
-  //   Get.bottomSheet(
-  //     Container(
-  //       padding: const EdgeInsets.all(20),
-  //       decoration: const BoxDecoration(
-  //         color: Colors.white,
-  //         borderRadius: BorderRadius.only(
-  //           topLeft: Radius.circular(20),
-  //           topRight: Radius.circular(20),
-  //         ),
-  //       ),
-  //       child: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           Text(
-  //             'select_task'.tr,
-  //             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-  //           ),
-  //           const SizedBox(height: 16),
-  //           Obx(() {
-  //             if (controller.todayTasks.isEmpty) {
-  //               return Padding(
-  //                 padding: const EdgeInsets.all(20),
-  //                 child: Center(
-  //                   child: Text(
-  //                     'no_tasks_today'.tr,
-  //                     style: TextStyle(color: Colors.grey.shade600),
-  //                   ),
-  //                 ),
-  //               );
-  //             }
-  //
-  //             return ListView.builder(
-  //               shrinkWrap: true,
-  //               itemCount: controller.todayTasks.length,
-  //               itemBuilder: (context, index) {
-  //                 final task = controller.todayTasks[index];
-  //                 return ListTile(
-  //                   leading: Container(
-  //                     width: 4,
-  //                     height: 40,
-  //                     decoration: BoxDecoration(
-  //                       color: _getPriorityColor(task.priority),
-  //                       borderRadius: BorderRadius.circular(2),
-  //                     ),
-  //                   ),
-  //                   title: Text(task.title),
-  //                   subtitle: task.totalFocusMinutes > 0
-  //                       ? Text('${task.totalFocusMinutes} min focused')
-  //                       : null,
-  //                   onTap: () {
-  //                     controller.selectTask(task);
-  //                     Get.back();
-  //                   },
-  //                 );
-  //               },
-  //             );
-  //           }),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
+  void _showTaskSelector(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Get.theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'select_task'.tr,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Obx(() {
+              if (controller.todayTasks.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: Text(
+                      'no_tasks_today'.tr,
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ),
+                );
+              }
 
-  // Color _getPriorityColor(Priority priority) {
-  //   switch (priority) {
-  //     case Priority.high:
-  //       return Colors.red;
-  //     case Priority.medium:
-  //       return Colors.orange;
-  //     case Priority.low:
-  //       return Colors.green;
-  //   }
-  // }
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: controller.todayTasks.length,
+                itemBuilder: (context, index) {
+                  final task = controller.todayTasks[index];
+                  return ListTile(
+                    leading: Container(
+                      width: 4,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(task.priority),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    title: Text(task.title),
+                    subtitle: task.totalFocusMinutes > 0
+                        ? Text('${task.totalFocusMinutes} min focused')
+                        : null,
+                    onTap: () {
+                      controller.selectTask(task);
+                      Get.back();
+                    },
+                  );
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getPriorityColor(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return Colors.red;
+      case Priority.medium:
+        return Colors.orange;
+      case Priority.low:
+        return Colors.green;
+    }
+  }
 }

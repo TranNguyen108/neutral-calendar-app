@@ -6,7 +6,7 @@ import 'views/main_view.dart';
 class MainModule {
   static final routes = [
     GetPage(
-      name: AppRoutes.MAIN,
+      name: AppRoutes.main,
       page: () => const MainView(),
       binding: MainBinding(),
     ),

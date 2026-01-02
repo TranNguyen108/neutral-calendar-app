@@ -164,7 +164,6 @@ class QuickAddBottomSheet extends StatelessWidget {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
-    String? value,
   }) {
     return Obx(() {
       // Determine button value based on label
@@ -186,29 +185,35 @@ class QuickAddBottomSheet extends StatelessWidget {
       } else if (label == 'reminder'.tr &&
           controller.selectedReminder.value != null) {
         final minutes = controller.selectedReminder.value!;
-        if (minutes == 5)
+        if (minutes == 5) {
           displayText = '5min';
-        else if (minutes == 15)
+        } else if (minutes == 15) {
           displayText = '15min';
-        else if (minutes == 30)
+        } else if (minutes == 30) {
           displayText = '30min';
-        else if (minutes == 60) displayText = '1hr';
+        } else if (minutes == 60) {
+          displayText = '1hr';
+        }
         hasValue = true;
       } else if (label == 'recurrence'.tr &&
           controller.selectedRecurrence.value != RecurrenceRule.none) {
         final rule = controller.selectedRecurrence.value;
-        if (rule == RecurrenceRule.daily)
+        if (rule == RecurrenceRule.daily) {
           displayText = 'daily'.tr;
-        else if (rule == RecurrenceRule.weekly)
+        } else if (rule == RecurrenceRule.weekly) {
           displayText = 'weekly'.tr;
-        else if (rule == RecurrenceRule.monthly) displayText = 'monthly'.tr;
+        } else if (rule == RecurrenceRule.monthly) {
+          displayText = 'monthly'.tr;
+        }
         hasValue = true;
       } else if (label == 'priority'.tr &&
           controller.selectedPriority.value != Priority.medium) {
         final priority = controller.selectedPriority.value;
-        if (priority == Priority.high)
+        if (priority == Priority.high) {
           displayText = 'high'.tr;
-        else if (priority == Priority.low) displayText = 'low'.tr;
+        } else if (priority == Priority.low) {
+          displayText = 'low'.tr;
+        }
         hasValue = true;
       }
 
@@ -245,7 +250,7 @@ class QuickAddBottomSheet extends StatelessWidget {
                         controller.selectedCategory.value = cat;
                         Get.back();
                       },
-                      selectedColor: Colors.purple.withOpacity(0.3),
+                      selectedColor: Colors.purple.withValues(alpha: 0.3),
                       checkmarkColor: Colors.purple,
                       side: BorderSide(
                           color: controller.selectedCategory.value == cat
@@ -453,7 +458,7 @@ class QuickAddBottomSheet extends StatelessWidget {
         controller.setDate(date);
         Get.back();
       },
-      selectedColor: Colors.blue.withOpacity(0.3),
+      selectedColor: Colors.blue.withValues(alpha: 0.3),
       checkmarkColor: Colors.blue,
       side: BorderSide(color: isSelected ? Colors.blue : Colors.grey.shade300),
     );
@@ -470,7 +475,7 @@ class QuickAddBottomSheet extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
               color: isSelected ? color : Colors.grey.shade300, width: 2),
           borderRadius: BorderRadius.circular(8),
@@ -502,7 +507,7 @@ class QuickAddBottomSheet extends StatelessWidget {
         controller.selectedRecurrence.value = rule;
         Get.back();
       },
-      selectedColor: Colors.teal.withOpacity(0.3),
+      selectedColor: Colors.teal.withValues(alpha: 0.3),
       checkmarkColor: Colors.teal,
       side: BorderSide(color: isSelected ? Colors.teal : Colors.grey.shade300),
     );
@@ -518,7 +523,7 @@ class QuickAddBottomSheet extends StatelessWidget {
         controller.selectedReminder.value = minutes;
         Get.back();
       },
-      selectedColor: Colors.amber.withOpacity(0.3),
+      selectedColor: Colors.amber.withValues(alpha: 0.3),
       checkmarkColor: Colors.amber,
       side: BorderSide(color: isSelected ? Colors.amber : Colors.grey.shade300),
     );

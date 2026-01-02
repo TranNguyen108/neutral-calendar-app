@@ -114,7 +114,7 @@ class AchievementService extends GetxService {
   void _showAchievementUnlocked(Achievement achievement) {
     Get.snackbar(
       '${achievement.icon} ${'achievement_unlocked'.tr}',
-      '${achievement.titleKey.tr}',
+      achievement.titleKey.tr,
       duration: const Duration(seconds: 5),
     );
   }

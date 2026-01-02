@@ -22,7 +22,7 @@ class TodayView extends GetView<TodayController> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => Get.toNamed(AppRoutes.SEARCH),
+            onPressed: () => Get.toNamed(AppRoutes.search),
           ),
         ],
       ),
@@ -155,8 +155,8 @@ class TodayView extends GetView<TodayController> {
           )),
       floatingActionButton: FloatingActionButton(
         onPressed: () => QuickAddBottomSheet.show(),
-        child: const Icon(Icons.add),
         tooltip: 'quick_add'.tr,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -308,7 +308,7 @@ class TodayView extends GetView<TodayController> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             onTap: () {
-              Get.toNamed(AppRoutes.TASK_DETAIL, arguments: task);
+              Get.toNamed(AppRoutes.taskDetail, arguments: task);
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
@@ -390,7 +390,7 @@ class TodayView extends GetView<TodayController> {
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: _getCategoryColor(task.category!)
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(

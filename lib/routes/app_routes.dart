@@ -1,11 +1,11 @@
 class AppRoutes {
-  static const SPLASH = '/splash';
-  static const MAIN = '/main';
-  static const TODAY = '/today';
-  static const CALENDAR = '/calendar';
-  static const TASK_DETAIL = '/task-detail';
-  static const FOCUS = '/focus';
-  static const PROFILE = '/profile';
-  static const REPORT = '/report';
-  static const SEARCH = '/search';
+  static const splash = '/splash';
+  static const main = '/main';
+  static const today = '/today';
+  static const calendar = '/calendar';
+  static const taskDetail = '/task-detail';
+  static const focus = '/focus';
+  static const profile = '/profile';
+  static const report = '/report';
+  static const search = '/search';
 }

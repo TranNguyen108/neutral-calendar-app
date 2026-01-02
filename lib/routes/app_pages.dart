@@ -12,16 +12,16 @@ class AppPages {
     ...SplashModule.routes,
     ...MainModule.routes,
     GetPage(
-      name: AppRoutes.TASK_DETAIL,
+      name: AppRoutes.taskDetail,
       page: () => const TaskDetailView(),
     ),
     GetPage(
-      name: AppRoutes.REPORT,
+      name: AppRoutes.report,
       page: () => const ReportView(),
       binding: ReportBinding(),
     ),
     GetPage(
-      name: AppRoutes.SEARCH,
+      name: AppRoutes.search,
       page: () => const SearchView(),
     ),
   ];

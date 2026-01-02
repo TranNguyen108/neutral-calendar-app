@@ -166,15 +166,3 @@ class DailySummaryService extends GetxService {
     }
   }
 }
-
-extension on StorageService {
-  Future<void> write(String key, dynamic value) async {
-    // Assuming StorageService uses GetStorage internally
-    // This is a helper to write generic values
-  }
-
-  T? read<T>(String key) {
-    // Read generic values from storage
-    return null;
-  }
-}

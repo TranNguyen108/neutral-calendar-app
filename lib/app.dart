@@ -30,7 +30,7 @@ class App extends StatelessWidget {
       translations: AppTranslations(),
       locale: locale,
       fallbackLocale: const Locale('en', 'US'),
-      initialRoute: AppRoutes.SPLASH,
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
     );
   }

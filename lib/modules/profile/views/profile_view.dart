@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
@@ -64,7 +66,7 @@ class ProfileView extends GetView<ProfileController> {
                   subtitle: Text('view_statistics'.tr),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
-                    Get.toNamed(AppRoutes.REPORT);
+                    Get.toNamed(AppRoutes.report);
                   },
                 ),
                 const Divider(height: 1),
@@ -268,11 +270,11 @@ class ProfileView extends GetView<ProfileController> {
             ),
             const SizedBox(height: 16),
             Obx(() => RadioListTile<String>(
-                  title: Row(
+                  title: const Row(
                     children: [
                       Text('🇻🇳', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      const Text('Tiếng Việt'),
+                      SizedBox(width: 12),
+                      Text('Tiếng Việt'),
                     ],
                   ),
                   value: 'Tiếng Việt',
@@ -285,11 +287,11 @@ class ProfileView extends GetView<ProfileController> {
                   },
                 )),
             Obx(() => RadioListTile<String>(
-                  title: Row(
+                  title: const Row(
                     children: [
                       Text('🇺🇸', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 12),
-                      const Text('English'),
+                      SizedBox(width: 12),
+                      Text('English'),
                     ],
                   ),
                   value: 'English',

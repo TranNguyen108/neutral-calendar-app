@@ -43,7 +43,7 @@ class NotificationService extends GetxService {
     // Handle notification tap - navigate to task detail
     if (response.payload != null) {
       // You can parse the payload and navigate to the task
-      // Get.toNamed(AppRoutes.TASK_DETAIL, arguments: taskId);
+      // Get.toNamed(AppRoutes.taskDetail, arguments: taskId);
     }
   }
 

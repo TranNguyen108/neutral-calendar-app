@@ -21,7 +21,7 @@ class CalendarView extends GetView<CalendarController> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () => Get.toNamed(AppRoutes.SEARCH),
+            onPressed: () => Get.toNamed(AppRoutes.search),
           ),
         ],
       ),
@@ -139,7 +139,7 @@ class CalendarView extends GetView<CalendarController> {
                   ),
                 ),
                 onTap: () {
-                  Get.toNamed(AppRoutes.TASK_DETAIL, arguments: task);
+                  Get.toNamed(AppRoutes.taskDetail, arguments: task);
                 },
               ),
             ),

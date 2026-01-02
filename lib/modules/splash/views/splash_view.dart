@@ -7,7 +7,6 @@ class SplashView extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
-    print('🎨 Splash View building...');
     return Scaffold(
       backgroundColor: Colors.blue,
       body: Center(
@@ -17,7 +16,7 @@ class SplashView extends GetView<SplashController> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -58,7 +57,6 @@ class SplashView extends GetView<SplashController> {
             const SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                print('🔘 Button pressed');
                 controller.navigateNow();
               },
               style: ElevatedButton.styleFrom(

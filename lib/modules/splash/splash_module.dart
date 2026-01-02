@@ -6,7 +6,7 @@ import 'views/splash_view.dart';
 class SplashModule {
   static final routes = [
     GetPage(
-      name: AppRoutes.SPLASH,
+      name: AppRoutes.splash,
       page: () => const SplashView(),
       binding: SplashBinding(),
     ),
