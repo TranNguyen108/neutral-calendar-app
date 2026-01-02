@@ -1,0 +1,25 @@
+name: nc_app
+description: Neural Calendar - A clean Flutter app with GetX architecture
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  get: ^4.6.6
+  get_storage: ^2.1.1
+  intl: ^0.18.0
+  table_calendar: ^3.0.9
+  cupertino_icons: ^1.0.2
+  flutter_local_notifications: ^17.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
