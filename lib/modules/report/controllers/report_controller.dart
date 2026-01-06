@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../../../core/models/task.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/utils/task_filters.dart';
 
 class ReportController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
@@ -31,16 +32,10 @@ class ReportController extends GetxController {
     final allSessions = _storage.getFocusSessions();
 
     // Today stats
-    final todayTasks = allTasks
-        .where((task) =>
-            task.date.year == today.year &&
-            task.date.month == today.month &&
-            task.date.day == today.day)
-        .toList();
+    final todayTasks = allTasks.forToday();
 
     totalTasksToday.value = todayTasks.length;
-    completedTasksToday.value =
-        todayTasks.where((t) => t.status == TaskStatus.done).length;
+    completedTasksToday.value = todayTasks.completed().length;
 
     final todaySessions = allSessions
         .where((s) =>
@@ -56,8 +51,7 @@ class ReportController extends GetxController {
     final weekTasks =
         allTasks.where((task) => task.date.isAfter(weekAgo)).toList();
     totalTasksWeek.value = weekTasks.length;
-    completedTasksWeek.value =
-        weekTasks.where((t) => t.status == TaskStatus.done).length;
+    completedTasksWeek.value = weekTasks.completed().length;
 
     final weekSessions =
         allSessions.where((s) => s.startTime.isAfter(weekAgo)).toList();
@@ -77,13 +71,7 @@ class ReportController extends GetxController {
     final dayMap = <String, int>{};
     for (var i = 0; i < 7; i++) {
       final day = today.subtract(Duration(days: 6 - i));
-      final dayTasks = allTasks
-          .where((task) =>
-              task.date.year == day.year &&
-              task.date.month == day.month &&
-              task.date.day == day.day &&
-              task.status == TaskStatus.done)
-          .length;
+      final dayTasks = allTasks.forDate(day).completed().length;
       dayMap[_getDayName(i)] = dayTasks;
     }
     weeklyCompletionByDay.value = dayMap;

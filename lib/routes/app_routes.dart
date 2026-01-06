@@ -8,4 +8,6 @@ class AppRoutes {
   static const profile = '/profile';
   static const report = '/report';
   static const search = '/search';
+  static const projects = '/projects';
+  static const projectDetail = '/project/:projectId';
 }

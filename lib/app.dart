@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:flutter/foundation.dart';
+
+import 'core/services/storage_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/translations/app_translations.dart';
+import 'core/utils/logger.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
-import 'core/translations/app_translations.dart';
-import 'core/services/storage_service.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -17,9 +18,7 @@ class App extends StatelessWidget {
     final locale =
         langCode == 'vi' ? const Locale('vi', 'VN') : const Locale('en', 'US');
 
-    if (kDebugMode) {
-      print('🌍 Loading app with locale: $locale');
-    }
+    Get.find<Logger>().info('Loading app with locale: $locale', tag: 'APP');
 
     return GetMaterialApp(
       title: 'Neural Calendar',

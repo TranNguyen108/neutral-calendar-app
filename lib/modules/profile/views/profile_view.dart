@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/profile_controller.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/services/sync_service.dart';
 
 class ProfileView extends GetView<ProfileController> {
   const ProfileView({super.key});
@@ -89,6 +90,64 @@ class ProfileView extends GetView<ProfileController> {
                     // Backup screen
                   },
                 ),
+                const Divider(height: 1),
+                // Cloud Sync Status
+                Obx(() {
+                  final syncService = Get.find<SyncService>();
+                  final isOnline = syncService.isOnline.value;
+                  final syncStatus = syncService.syncStatus.value;
+                  final lastSync = syncService.lastSyncTime.value;
+
+                  String statusText = 'cloud_sync'.tr;
+                  String subtitleText = '';
+                  IconData statusIcon = Icons.cloud_off;
+                  Color? iconColor;
+
+                  if (!isOnline) {
+                    subtitleText = 'offline_mode'.tr;
+                    statusIcon = Icons.cloud_off;
+                    iconColor = Colors.grey;
+                  } else if (syncStatus == SyncStatus.syncing) {
+                    subtitleText = 'syncing'.tr;
+                    statusIcon = Icons.cloud_sync;
+                    iconColor = Colors.blue;
+                  } else if (syncStatus == SyncStatus.failed) {
+                    subtitleText = 'sync_failed'.tr;
+                    statusIcon = Icons.cloud_off;
+                    iconColor = Colors.red;
+                  } else if (lastSync != null) {
+                    final diff = DateTime.now().difference(lastSync);
+                    if (diff.inMinutes < 1) {
+                      subtitleText = 'synced_just_now'.tr;
+                    } else if (diff.inHours < 1) {
+                      subtitleText = 'synced_minutes_ago'
+                          .trParams({'minutes': '${diff.inMinutes}'});
+                    } else if (diff.inHours < 24) {
+                      subtitleText = 'synced_hours_ago'
+                          .trParams({'hours': '${diff.inHours}'});
+                    } else {
+                      subtitleText = 'synced_days_ago'
+                          .trParams({'days': '${diff.inDays}'});
+                    }
+                    statusIcon = Icons.cloud_done;
+                    iconColor = Colors.green;
+                  } else {
+                    subtitleText = 'not_synced'.tr;
+                  }
+
+                  return ListTile(
+                    leading: Icon(statusIcon, color: iconColor),
+                    title: Text(statusText),
+                    subtitle: Text(subtitleText),
+                    trailing: isOnline && syncStatus != SyncStatus.syncing
+                        ? IconButton(
+                            icon: const Icon(Icons.sync, size: 20),
+                            onPressed: () => syncService.syncAll(),
+                            tooltip: 'sync_now'.tr,
+                          )
+                        : null,
+                  );
+                }),
               ],
             ),
           ),

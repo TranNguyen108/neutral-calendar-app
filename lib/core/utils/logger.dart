@@ -1,30 +1,32 @@
 import 'package:flutter/foundation.dart';
 
+/// Centralized logging utility
+/// Only logs in debug mode to prevent console clutter in production
 class Logger {
   void log(String message, {String tag = 'NC_APP'}) {
     if (kDebugMode) {
-      print('[$tag] $message');
+      debugPrint('[$tag] $message');
     }
   }
 
   void error(String message, {String tag = 'NC_APP', Object? error}) {
     if (kDebugMode) {
-      print('[$tag] ERROR: $message');
+      debugPrint('[$tag] ERROR: $message');
       if (error != null) {
-        print('[$tag] Error details: $error');
+        debugPrint('[$tag] Error details: $error');
       }
     }
   }
 
   void info(String message, {String tag = 'NC_APP'}) {
     if (kDebugMode) {
-      print('[$tag] INFO: $message');
+      debugPrint('[$tag] INFO: $message');
     }
   }
 
   void warning(String message, {String tag = 'NC_APP'}) {
     if (kDebugMode) {
-      print('[$tag] WARNING: $message');
+      debugPrint('[$tag] WARNING: $message');
     }
   }
 }

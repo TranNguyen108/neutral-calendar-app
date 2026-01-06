@@ -1,12 +1,14 @@
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/models/task.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/services/recurrence_service.dart';
-import '../../../core/services/notification_service.dart';
 import '../../../core/services/achievement_service.dart';
-import '../../../core/services/daily_summary_service.dart';
 import '../../../core/services/behavior_logging_service.dart';
+import '../../../core/services/daily_summary_service.dart';
+import '../../../core/services/notification_service.dart';
+import '../../../core/services/recurrence_service.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/utils/task_filters.dart';
 
 class TodayController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
@@ -22,9 +24,19 @@ class TodayController extends GetxController {
     throw Exception('NotificationService not initialized');
   }
 
+  // All today's tasks (full dataset)
+  final _allTodayTasks = <Task>[];
+
+  // Paginated visible tasks
   final tasks = <Task>[].obs;
   final urgentTasks = <Task>[].obs;
   final selectedDate = DateTime.now().obs;
+
+  // Pagination state
+  static const int _pageSize = 30;
+  final currentPage = 0.obs;
+  final isLoadingMore = false.obs;
+  final hasMoreTasks = true.obs;
 
   @override
   void onInit() {
@@ -40,56 +52,49 @@ class TodayController extends GetxController {
 
   void loadTodayTasks() {
     final allTasks = _storage.getTasks();
-    final today = DateTime.now();
-    tasks.value = allTasks.where((task) {
-      return task.date.year == today.year &&
-          task.date.month == today.month &&
-          task.date.day == today.day;
-    }).toList();
 
-    // Sort tasks: Overdue first, then by priority, then by time
-    tasks.sort((a, b) {
-      // Overdue tasks first
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
+    // Use extension methods for clean filtering and sorting
+    _allTodayTasks.clear();
+    _allTodayTasks.addAll(allTasks.forToday().sortedByUrgency());
 
-      // Then by priority (high to low)
-      if (a.priority != b.priority) {
-        return b.priority.index - a.priority.index;
-      }
+    // Reset pagination
+    currentPage.value = 0;
+    hasMoreTasks.value = _allTodayTasks.length > _pageSize;
 
-      // Then by time
-      if (a.startTime == null && b.startTime == null) return 0;
-      if (a.startTime == null) return 1;
-      if (b.startTime == null) return -1;
-      return a.startTime!.compareTo(b.startTime!);
-    });
+    // Load first page
+    final endIndex = _pageSize.clamp(0, _allTodayTasks.length);
+    tasks.value = _allTodayTasks.sublist(0, endIndex);
 
-    _loadUrgentTasks();
+    // Load urgent tasks using the extension method
+    urgentTasks.value = allTasks.urgent(limit: 3);
   }
 
-  void _loadUrgentTasks() {
-    final now = DateTime.now();
-    urgentTasks.value = tasks
-        .where((task) {
-          if (task.status == TaskStatus.done) return false;
+  /// Load more tasks for pagination (lazy loading)
+  void loadMoreTasks() {
+    if (isLoadingMore.value || !hasMoreTasks.value) return;
 
-          // High priority tasks
-          if (task.priority == Priority.high) return true;
+    isLoadingMore.value = true;
 
-          // Overdue tasks
-          if (task.isOverdue) return true;
+    // Simulate slight delay for smooth UX (optional)
+    Future.delayed(const Duration(milliseconds: 100), () {
+      final nextPage = currentPage.value + 1;
+      final startIndex = nextPage * _pageSize;
+      final endIndex = (startIndex + _pageSize).clamp(0, _allTodayTasks.length);
 
-          // Tasks starting within next 2 hours
-          if (task.startTime != null) {
-            final diff = task.startTime!.difference(now);
-            if (diff.inMinutes > 0 && diff.inMinutes <= 120) return true;
-          }
+      if (startIndex < _allTodayTasks.length) {
+        // Add next batch to visible tasks
+        final newBatch = _allTodayTasks.sublist(startIndex, endIndex);
+        tasks.addAll(newBatch);
+        currentPage.value = nextPage;
 
-          return false;
-        })
-        .take(3)
-        .toList();
+        // Check if there are more tasks
+        hasMoreTasks.value = endIndex < _allTodayTasks.length;
+      } else {
+        hasMoreTasks.value = false;
+      }
+
+      isLoadingMore.value = false;
+    });
   }
 
   int get totalTasks => tasks.length;

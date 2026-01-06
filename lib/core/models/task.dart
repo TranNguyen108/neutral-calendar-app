@@ -1,3 +1,5 @@
+import 'attachment.dart';
+
 class Task {
   final String id;
   final String title;
@@ -6,7 +8,15 @@ class Task {
   final DateTime? endTime;
   final Priority priority;
   final TaskStatus status;
+
+  // Project/Section organization (NEW)
+  final String? projectId;
+  final String? sectionId;
+
+  // Legacy category (keep for backward compatibility during migration)
+  @Deprecated('Use projectId instead. Will be removed in v2.0')
   final String? category;
+
   final String? note;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -16,6 +26,13 @@ class Task {
   final DateTime? recurrenceEndDate;
   final int? reminderMinutesBefore;
 
+  // Subtasks (NEW - for next feature)
+  final String? parentTaskId;
+  final int subtaskOrder; // Order within parent
+
+  // Attachments (NEW)
+  final List<Attachment> attachments;
+
   Task({
     required this.id,
     required this.title,
@@ -24,7 +41,9 @@ class Task {
     this.endTime,
     this.priority = Priority.medium,
     this.status = TaskStatus.todo,
-    this.category,
+    this.projectId,
+    this.sectionId,
+    this.category, // Legacy
     this.note,
     required this.createdAt,
     required this.updatedAt,
@@ -33,6 +52,9 @@ class Task {
     this.recurrenceInterval,
     this.recurrenceEndDate,
     this.reminderMinutesBefore,
+    this.parentTaskId,
+    this.subtaskOrder = 0,
+    this.attachments = const [],
   });
 
   // Check if task is overdue
@@ -46,6 +68,9 @@ class Task {
     final taskEndOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
     return now.isAfter(taskEndOfDay);
   }
+
+  // Check if this task is a subtask
+  bool get isSubtask => parentTaskId != null && parentTaskId!.isNotEmpty;
 
   // Get task duration in minutes
   int? get durationMinutes {
@@ -63,6 +88,8 @@ class Task {
     DateTime? endTime,
     Priority? priority,
     TaskStatus? status,
+    String? projectId,
+    String? sectionId,
     String? category,
     String? note,
     DateTime? createdAt,
@@ -72,8 +99,14 @@ class Task {
     int? recurrenceInterval,
     DateTime? recurrenceEndDate,
     int? reminderMinutesBefore,
+    String? parentTaskId,
+    int? subtaskOrder,
+    List<Attachment>? attachments,
     bool clearStartTime = false,
     bool clearEndTime = false,
+    bool clearProjectId = false,
+    bool clearSectionId = false,
+    bool clearParentTaskId = false,
   }) {
     return Task(
       id: id ?? this.id,
@@ -83,6 +116,8 @@ class Task {
       endTime: clearEndTime ? null : (endTime ?? this.endTime),
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      projectId: clearProjectId ? null : (projectId ?? this.projectId),
+      sectionId: clearSectionId ? null : (sectionId ?? this.sectionId),
       category: category ?? this.category,
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
@@ -93,6 +128,10 @@ class Task {
       recurrenceEndDate: recurrenceEndDate ?? this.recurrenceEndDate,
       reminderMinutesBefore:
           reminderMinutesBefore ?? this.reminderMinutesBefore,
+      parentTaskId:
+          clearParentTaskId ? null : (parentTaskId ?? this.parentTaskId),
+      subtaskOrder: subtaskOrder ?? this.subtaskOrder,
+      attachments: attachments ?? this.attachments,
     );
   }
 
@@ -105,6 +144,8 @@ class Task {
       'endTime': endTime?.toIso8601String(),
       'priority': priority.name,
       'status': status.name,
+      'projectId': projectId,
+      'sectionId': sectionId,
       'category': category,
       'note': note,
       'totalFocusMinutes': totalFocusMinutes,
@@ -114,6 +155,9 @@ class Task {
       'recurrenceInterval': recurrenceInterval,
       'recurrenceEndDate': recurrenceEndDate?.toIso8601String(),
       'reminderMinutesBefore': reminderMinutesBefore,
+      'parentTaskId': parentTaskId,
+      'subtaskOrder': subtaskOrder,
+      'attachments': attachments.map((a) => a.toJson()).toList(),
     };
   }
 
@@ -133,6 +177,8 @@ class Task {
         (e) => e.name == json['status'],
         orElse: () => TaskStatus.todo,
       ),
+      projectId: json['projectId'],
+      sectionId: json['sectionId'],
       category: json['category'],
       note: json['note'],
       createdAt: DateTime.parse(json['createdAt']),
@@ -149,6 +195,13 @@ class Task {
           ? DateTime.parse(json['recurrenceEndDate'])
           : null,
       reminderMinutesBefore: json['reminderMinutesBefore'],
+      parentTaskId: json['parentTaskId'],
+      subtaskOrder: json['subtaskOrder'] ?? 0,
+      attachments: json['attachments'] != null
+          ? (json['attachments'] as List)
+              .map((a) => Attachment.fromJson(a as Map<String, dynamic>))
+              .toList()
+          : [],
     );
   }
 }

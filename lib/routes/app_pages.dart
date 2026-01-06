@@ -1,10 +1,13 @@
 import 'package:get/get.dart';
-import '../modules/splash/splash_module.dart';
+
 import '../modules/main/main_module.dart';
-import '../modules/task_detail/views/task_detail_view.dart';
+import '../modules/projects/bindings/project_detail_binding.dart';
+import '../modules/projects/views/project_detail_view.dart';
 import '../modules/report/bindings/report_binding.dart';
 import '../modules/report/views/report_view.dart';
 import '../modules/search/views/search_view.dart';
+import '../modules/splash/splash_module.dart';
+import '../modules/task_detail/views/task_detail_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -23,6 +26,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.search,
       page: () => const SearchView(),
+    ),
+    GetPage(
+      name: AppRoutes.projectDetail,
+      page: () => const ProjectDetailView(),
+      binding: ProjectDetailBinding(),
     ),
   ];
 }

@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../controllers/calendar_controller.dart';
 import '../../../core/models/task.dart';
+import '../../../core/repositories/task_repository.dart';
 import '../../../routes/app_routes.dart';
 import '../../quick_add/views/quick_add_bottom_sheet.dart';
 
@@ -93,6 +94,8 @@ class CalendarView extends GetView<CalendarController> {
           final isOverdue = task.isOverdue;
           final cardColor = isOverdue ? Colors.red.shade50 : null;
           final borderColor = isOverdue ? Colors.red : null;
+          final taskRepo = Get.find<TaskRepository>();
+          final subtasks = taskRepo.getSubtasks(task.id);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -127,9 +130,47 @@ class CalendarView extends GetView<CalendarController> {
                         : null,
                   ),
                 ),
-                subtitle: task.startTime != null
-                    ? Text(DateFormat('HH:mm').format(task.startTime!))
-                    : null,
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (task.startTime != null)
+                      Text(DateFormat('HH:mm').format(task.startTime!)),
+                    if (subtasks.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.checklist,
+                              size: 12, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${subtasks.where((s) => s.status == TaskStatus.done).length}/${subtasks.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (task.attachments.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.attach_file,
+                              size: 12, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${task.attachments.length}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
                 trailing: Container(
                   width: 12,
                   height: 12,

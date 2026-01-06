@@ -4,6 +4,8 @@ import '../../../core/models/focus_session.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/achievement_service.dart';
 import '../../../core/services/behavior_logging_service.dart';
+import '../../../core/utils/logger.dart';
+import '../../../core/utils/task_filters.dart';
 
 class FocusController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
@@ -21,18 +23,30 @@ class FocusController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    Logger.d('FocusController: onInit called');
     loadTodayTasks();
+  }
+
+  @override
+  void onClose() {
+    Logger.d(
+        'FocusController: onClose called - stopping timer and cleaning up');
+
+    // Stop the recursive timer by setting isRunning to false
+    // This prevents Future.delayed from continuing to execute
+    isRunning.value = false;
+
+    // Clear session data to prevent memory leaks
+    sessionStartTime = null;
+    currentSessionId = null;
+    selectedTask.value = null;
+
+    super.onClose();
   }
 
   void loadTodayTasks() {
     final allTasks = _storage.getTasks();
-    final today = DateTime.now();
-    todayTasks.value = allTasks.where((task) {
-      return task.date.year == today.year &&
-          task.date.month == today.month &&
-          task.date.day == today.day &&
-          task.status != TaskStatus.done;
-    }).toList();
+    todayTasks.value = allTasks.todayIncomplete();
   }
 
   void selectTask(Task? task) {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/main_controller.dart';
 import '../../today/views/today_view.dart';
 import '../../calendar/views/calendar_view.dart';
+import '../../projects/views/projects_view.dart';
 import '../../focus/views/focus_view.dart';
 import '../../profile/views/profile_view.dart';
 
@@ -14,7 +15,7 @@ class MainView extends GetView<MainController> {
     final List<Widget> pages = [
       const TodayView(),
       const CalendarView(),
-      const Center(child: Text('Add Task')), // Placeholder
+      const ProjectsView(),
       const FocusView(),
       const ProfileView(),
     ];
@@ -37,8 +38,8 @@ class MainView extends GetView<MainController> {
                 label: 'nav_calendar'.tr,
               ),
               BottomNavigationBarItem(
-                icon: const Icon(Icons.add_circle, size: 32),
-                label: 'nav_add'.tr,
+                icon: const Icon(Icons.folder_outlined),
+                label: 'nav_projects'.tr,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.center_focus_strong),

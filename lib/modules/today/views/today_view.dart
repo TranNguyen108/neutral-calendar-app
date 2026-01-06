@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/today_controller.dart';
-import '../../../core/models/task.dart';
-import '../../../routes/app_routes.dart';
 import 'package:intl/intl.dart';
+
+import '../../../core/models/task.dart';
+import '../../../core/repositories/task_repository.dart';
+import '../../../routes/app_routes.dart';
 import '../../quick_add/views/quick_add_bottom_sheet.dart';
+import '../controllers/today_controller.dart';
 import 'widgets/suggestions_card.dart';
 
 class TodayView extends GetView<TodayController> {
@@ -140,12 +142,65 @@ class TodayView extends GetView<TodayController> {
                       : SliverList(
                           delegate: SliverChildBuilderDelegate(
                             (context, index) {
+                              // Trigger load more when reaching near the end
+                              if (index == controller.tasks.length - 5 &&
+                                  controller.hasMoreTasks.value &&
+                                  !controller.isLoadingMore.value) {
+                                controller.loadMoreTasks();
+                              }
+
                               final task = controller.tasks[index];
                               return _buildTaskCard(task);
                             },
                             childCount: controller.tasks.length,
                           ),
                         ),
+                ),
+                // Loading indicator for pagination
+                SliverToBoxAdapter(
+                  child: Obx(() {
+                    if (controller.isLoadingMore.value) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 8),
+                              Text(
+                                'loading_more'.tr,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    // Show "Load More" button if there are more tasks
+                    else if (controller.hasMoreTasks.value &&
+                        controller.tasks.isNotEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Center(
+                          child: OutlinedButton.icon(
+                            onPressed: controller.loadMoreTasks,
+                            icon: const Icon(Icons.expand_more),
+                            label: Text('load_more'.tr),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
                 ),
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 100),
@@ -405,6 +460,27 @@ class TodayView extends GetView<TodayController> {
                             ],
                           ],
                         ),
+                        // Subtask progress indicator
+                        _buildSubtaskProgress(task),
+                        // Attachment count indicator
+                        if (task.attachments.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.attach_file,
+                                    size: 12, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${task.attachments.length}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -426,42 +502,84 @@ class TodayView extends GetView<TodayController> {
     );
   }
 
-  Color _getPriorityColor(Priority priority) {
-    switch (priority) {
-      case Priority.high:
-        return Colors.red;
-      case Priority.medium:
-        return Colors.orange;
-      case Priority.low:
-        return Colors.green;
-    }
-  }
+  Widget _buildSubtaskProgress(Task task) {
+    final taskRepo = Get.find<TaskRepository>();
+    final subtasks = taskRepo.getSubtasks(task.id);
 
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'work':
-        return Colors.blue;
-      case 'study':
-        return Colors.purple;
-      case 'health':
-        return Colors.green;
-      case 'personal':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
+    if (subtasks.isEmpty) return const SizedBox.shrink();
 
-  String _formatDuration(int minutes) {
-    if (minutes < 60) {
-      return '$minutes min';
-    } else {
-      final hours = minutes ~/ 60;
-      final mins = minutes % 60;
-      if (mins == 0) {
-        return '${hours}h';
-      }
-      return '${hours}h ${mins}m';
+    final completed = subtasks.where((s) => s.status == TaskStatus.done).length;
+    final progress = taskRepo.calculateTaskProgress(task.id);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Icon(Icons.checklist, size: 12, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Text(
+            '$completed/${subtasks.length}',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 3,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  progress >= 1.0 ? Colors.green : Colors.blue,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Color _getPriorityColor(Priority priority) {
+  switch (priority) {
+    case Priority.high:
+      return Colors.red;
+    case Priority.medium:
+      return Colors.orange;
+    case Priority.low:
+      return Colors.green;
+  }
+}
+
+Color _getCategoryColor(String category) {
+  switch (category.toLowerCase()) {
+    case 'work':
+      return Colors.blue;
+    case 'study':
+      return Colors.purple;
+    case 'health':
+      return Colors.green;
+    case 'personal':
+      return Colors.orange;
+    default:
+      return Colors.grey;
+  }
+}
+
+String _formatDuration(int minutes) {
+  if (minutes < 60) {
+    return '$minutes min';
+  } else {
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) {
+      return '${hours}h';
     }
+    return '${hours}h ${mins}m';
   }
 }

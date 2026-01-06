@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/task.dart';
-import '../../../core/services/storage_service.dart';
+import '../../../core/models/project.dart';
+import '../../../core/repositories/project_repository.dart';
 import '../../../core/services/natural_language_parser.dart';
 import '../../../core/services/notification_service.dart';
-import '../../today/controllers/today_controller.dart';
+import '../../../core/services/storage_service.dart';
 import '../../calendar/controllers/calendar_controller.dart';
+import '../../today/controllers/today_controller.dart';
 
 class QuickAddController extends GetxController {
   final NaturalLanguageParser _parser = Get.find();
-
-  StorageService get _storage => Get.find<StorageService>();
+  final StorageService _storage = Get.find<StorageService>();
+  final ProjectRepository _projectRepo = Get.find<ProjectRepository>();
 
   NotificationService get _notifications {
     if (Get.isRegistered<NotificationService>()) {
@@ -28,13 +32,12 @@ class QuickAddController extends GetxController {
   final selectedCategory = 'Work'.obs;
   final selectedRecurrence = RecurrenceRule.none.obs;
   final selectedReminder = Rx<int?>(null);
+  final selectedProject = Rx<Project?>(null);
+  final projects = <Project>[].obs;
 
   // Default categories
   final categories = <String>[
-    'Work',
-    'Study',
-    'Personal',
-    'Favorite',
+    ...AppConstants.defaultCategories,
   ].obs;
 
   @override
@@ -42,22 +45,38 @@ class QuickAddController extends GetxController {
     super.onInit();
     // Load custom categories from storage
     _loadCategories();
+    // Load projects
+    _loadProjects();
     // Set default date to today
     selectedDate.value = DateTime.now();
     // Listen to title changes for parsing
     titleController.addListener(_onTitleChanged);
   }
 
+  void _loadProjects() {
+    projects.value = _projectRepo.getProjects(includeArchived: false);
+    // Set Inbox as default if exists
+    final inbox = projects.firstWhereOrNull((p) => p.isInbox);
+    if (inbox != null) {
+      selectedProject.value = inbox;
+    }
+  }
+
   @override
   void onClose() {
+    // Remove listener before disposal
     titleController.removeListener(_onTitleChanged);
+
+    // Dispose controllers
     titleController.dispose();
     noteController.dispose();
+
     super.onClose();
   }
 
   void _loadCategories() {
-    final savedCategories = _storage.read<List>('custom_categories');
+    final savedCategories =
+        _storage.read<List>(AppConstants.customCategoriesKey);
     if (savedCategories != null) {
       categories.addAll(savedCategories.map((e) => e.toString()));
     }
@@ -66,9 +85,11 @@ class QuickAddController extends GetxController {
   Future<void> addCategory(String category) async {
     if (!categories.contains(category)) {
       categories.add(category);
-      // Save to storage
-      await _storage.write('custom_categories',
-          categories.sublist(4).toList()); // Save only custom ones
+      // Save to storage (skip default categories)
+      await _storage.write(
+        AppConstants.customCategoriesKey,
+        categories.sublist(AppConstants.defaultCategories.length).toList(),
+      );
       selectedCategory.value = category;
     }
   }
@@ -180,6 +201,7 @@ class QuickAddController extends GetxController {
       priority: selectedPriority.value,
       status: TaskStatus.todo,
       category: selectedCategory.value,
+      projectId: selectedProject.value?.id,
       note: noteController.text.trim().isEmpty
           ? null
           : noteController.text.trim(),

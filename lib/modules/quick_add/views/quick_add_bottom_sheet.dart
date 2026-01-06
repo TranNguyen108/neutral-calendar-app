@@ -100,6 +100,13 @@ class QuickAddBottomSheet extends StatelessWidget {
                     _buildActionButton(
                       context,
                       controller,
+                      icon: Icons.folder_outlined,
+                      label: 'project'.tr,
+                      onTap: () => _showProjectPicker(controller, context),
+                    ),
+                    _buildActionButton(
+                      context,
+                      controller,
                       icon: Icons.category_outlined,
                       label: 'category'.tr,
                       onTap: () => _showCategoryPicker(controller, context),
@@ -170,7 +177,10 @@ class QuickAddBottomSheet extends StatelessWidget {
       String displayText = label;
       bool hasValue = false;
 
-      if (label == 'category'.tr &&
+      if (label == 'project'.tr && controller.selectedProject.value != null) {
+        displayText = controller.selectedProject.value!.name;
+        hasValue = true;
+      } else if (label == 'category'.tr &&
           controller.selectedCategory.value.isNotEmpty) {
         displayText = controller.selectedCategory.value;
         hasValue = true;
@@ -558,6 +568,57 @@ class QuickAddBottomSheet extends StatelessWidget {
               }
             },
             child: Text('add'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProjectPicker(
+    QuickAddController controller,
+    BuildContext context,
+  ) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('project'.tr),
+        content: Obx(
+          () => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: controller.projects.map((project) {
+              final isSelected =
+                  controller.selectedProject.value?.id == project.id;
+              return ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Color(project.colorValue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    IconData(project.iconCodePoint,
+                        fontFamily: 'MaterialIcons'),
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                title: Text(project.name),
+                selected: isSelected,
+                onTap: () {
+                  controller.selectedProject.value = project;
+                  Get.back();
+                },
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
           ),
         ],
       ),
