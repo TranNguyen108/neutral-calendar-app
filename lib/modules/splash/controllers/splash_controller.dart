@@ -8,13 +8,14 @@ class SplashController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    Logger.d('SplashController: onInit called');
+    Get.find<Logger>().log('SplashController: onInit called');
     _navigateToHome();
   }
 
   @override
   void onClose() {
-    Logger.d('SplashController: onClose called - cancelling navigation');
+    Get.find<Logger>()
+        .log('SplashController: onClose called - cancelling navigation');
     _isDisposed = true;
     super.onClose();
   }
@@ -26,10 +27,10 @@ class SplashController extends GetxController {
         try {
           Get.offNamed(AppRoutes.main);
         } catch (e) {
-          Logger.e('SplashController: Navigation error: $e');
+          Get.find<Logger>().error('SplashController: Navigation error: $e');
         }
       } else {
-        Logger.d(
+        Get.find<Logger>().log(
             'SplashController: Navigation cancelled - controller disposed');
       }
     });

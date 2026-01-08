@@ -17,6 +17,7 @@ import '../services/recurrence_service.dart';
 import '../services/smart_suggestion_service.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
+import '../services/widget_service.dart';
 import '../utils/logger.dart';
 
 class InitialBinding extends Bindings {
@@ -82,5 +83,9 @@ class InitialBinding extends Bindings {
     Get.put(BehaviorLoggingService(), permanent: true);
     Get.put(SmartSuggestionService(), permanent: true);
     Get.put(NaturalLanguageParser(), permanent: true);
+
+    // Widget Service (initialize for home screen widget)
+    await Get.putAsync(() => WidgetService().init(), permanent: true);
+    Get.find<WidgetService>().registerCallbacks();
   }
 }

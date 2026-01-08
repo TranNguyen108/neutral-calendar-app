@@ -13,6 +13,7 @@ class SearchView extends StatelessWidget {
     final controller = Get.put(TaskSearchController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: TextField(
           autofocus: true,
@@ -83,10 +84,10 @@ class SearchView extends StatelessWidget {
                           selected: isSelected,
                           onSelected: (_) =>
                               controller.togglePriority(priority),
-                          backgroundColor:
-                              _getPriorityColor(priority).withValues(alpha: 0.1),
-                          selectedColor:
-                              _getPriorityColor(priority).withValues(alpha: 0.3),
+                          backgroundColor: _getPriorityColor(priority)
+                              .withValues(alpha: 0.1),
+                          selectedColor: _getPriorityColor(priority)
+                              .withValues(alpha: 0.3),
                         ),
                       );
                     });
@@ -162,7 +163,8 @@ class SearchView extends StatelessWidget {
       child: ListTile(
         onTap: () => Get.toNamed(AppRoutes.taskDetail, arguments: task),
         leading: CircleAvatar(
-          backgroundColor: _getPriorityColor(task.priority).withValues(alpha: 0.2),
+          backgroundColor:
+              _getPriorityColor(task.priority).withValues(alpha: 0.2),
           child: Icon(
             task.status == TaskStatus.done
                 ? Icons.check_circle
@@ -209,7 +211,8 @@ class SearchView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(task.category!).withValues(alpha: 0.2),
+                  color:
+                      _getCategoryColor(task.category!).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

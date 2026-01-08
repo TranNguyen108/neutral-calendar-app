@@ -16,6 +16,7 @@ class CalendarView extends GetView<CalendarController> {
     Get.put(CalendarController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('calendar_title'.tr),
         elevation: 0,

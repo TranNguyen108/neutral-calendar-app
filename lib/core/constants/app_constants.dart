@@ -7,6 +7,9 @@ class AppConstants {
 
   // Storage Keys
   static const String tasksKey = 'tasks';
+  static const String notesKey = 'notes';
+  static const String diariesKey = 'diaries';
+  static const String eventsKey = 'events';
   static const String focusSessionsKey = 'focus_sessions';
   static const String darkModeKey = 'darkMode';
   static const String languageKey = 'language';

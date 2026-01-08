@@ -18,7 +18,7 @@ class AppTranslations extends Translations {
           'nav_today': 'Today',
           'nav_calendar': 'Calendar',
           'nav_projects': 'Projects',
-          'nav_focus': 'Focus',
+          'nav_manage': 'Manage',
           'nav_profile': 'Profile',
 
           // Projects Screen
@@ -85,6 +85,7 @@ class AppTranslations extends Translations {
           'title_required': 'Title *',
           'enter_title': 'Enter task title',
           'date': 'Date',
+          'time': 'Time',
           'start_time': 'Start Time',
           'end_time': 'End Time',
           'select_time': 'Select time',
@@ -101,7 +102,7 @@ class AppTranslations extends Translations {
           'personal': 'Personal',
           'other': 'Other',
           'note': 'Note',
-          'add_note': 'Add a note (optional)',
+          'enter_note': 'Add a note (optional)',
           'update_task': 'Update Task',
           'task_added': 'Task added',
           'task_updated': 'Task updated',
@@ -109,7 +110,7 @@ class AppTranslations extends Translations {
           'reschedule_tomorrow': 'Reschedule to Tomorrow',
           'delay_one_hour': 'Delay 1 Hour',
           'enter_title_error': 'Please enter a title',
-          'enter_note': 'Enter note',
+          'add_note_hint': 'Add a note (optional)',
           'tomorrow': 'Tomorrow',
           '3_days_later': '3 Days',
           'this_sunday': 'Sunday',
@@ -118,6 +119,17 @@ class AppTranslations extends Translations {
           'add_new_category': 'New Category',
           'enter_category_name': 'Enter category name',
           'add': 'Add',
+          'attach': 'Attach',
+          'attachments': 'Attachments',
+          'add_attachment': 'Add Attachment',
+          'take_photo': 'Take Photo',
+          'choose_gallery': 'Choose from Gallery',
+          'choose_file': 'Choose File',
+          'add_link': 'Add Link',
+          'image_added': 'Image added',
+          'file_added': 'File added',
+          'link_added': 'Link added',
+          'save_changes': 'Save Changes',
 
           // Task Detail
           'task_detail': 'Task Detail',
@@ -130,15 +142,39 @@ class AppTranslations extends Translations {
           'task_completed': 'Task completed!',
           'task_marked_todo': 'Task marked as todo',
 
-          // Focus Screen
-          'focus_title': 'Focus Mode',
-          'pomodoro_timer': 'Pomodoro Timer',
-          'start': 'Start',
-          'pause': 'Pause',
-          'reset': 'Reset',
-          'select_task': 'Select Task',
-          'change_task': 'Change Task',
-          'focus_completed': 'Pomodoro completed! Great work! 🎉',
+          // Focus Screen (REMOVED)
+
+          // Manage Screen
+          'notes_tab': 'Notes',
+          'diary_tab': 'Diary',
+          'all': 'All',
+          'no_notes': 'No notes yet',
+          'no_diaries': 'No diary entries yet',
+          'note_deleted': 'Note deleted',
+          'diary_deleted': 'Diary entry deleted',
+          'event_deleted': 'Event deleted',
+
+          // Add Forms
+          'add_note': 'Add Note',
+          'add_diary': 'Add Diary Entry',
+          'add_event': 'Add Event',
+          'note_title': 'Note Title',
+          'diary_title': 'Diary Title',
+          'event_title': 'Event Title',
+          'content': 'Content',
+          'enter_content': 'Enter content',
+          'show_time': 'Show Time',
+          'event_description': 'Description (Optional)',
+          'has_notification': 'Enable Notification',
+          'is_recurring': 'Repeat Yearly',
+          'note_saved': 'Note saved',
+          'diary_saved': 'Diary entry saved',
+          'event_saved': 'Event saved',
+
+          // Planning Prompt
+          'planning_prompt': 'Do you have any plans?',
+          'add_todo': 'Add TODO',
+          'choose_type': 'Choose type to add',
 
           // Profile Screen
           'profile_title': 'Profile',
@@ -323,7 +359,7 @@ class AppTranslations extends Translations {
           'nav_today': 'Hôm nay',
           'nav_calendar': 'Lịch',
           'nav_projects': 'Dự án',
-          'nav_focus': 'Tập trung',
+          'nav_manage': 'Quản lý',
           'nav_profile': 'Hồ sơ',
 
           // Projects Screen
@@ -390,6 +426,7 @@ class AppTranslations extends Translations {
           'title_required': 'Tiêu đề *',
           'enter_title': 'Nhập tiêu đề công việc',
           'date': 'Ngày',
+          'time': 'Thời gian',
           'start_time': 'Thời gian bắt đầu',
           'end_time': 'Thời gian kết thúc',
           'select_time': 'Chọn thời gian',
@@ -406,7 +443,7 @@ class AppTranslations extends Translations {
           'personal': 'Cá nhân',
           'other': 'Khác',
           'note': 'Ghi chú',
-          'add_note': 'Thêm ghi chú (tùy chọn)',
+          'enter_note': 'Thêm ghi chú (tùy chọn)',
           'update_task': 'Cập nhật',
           'task_added': 'Đã thêm việc',
           'task_updated': 'Đã cập nhật việc',
@@ -414,7 +451,7 @@ class AppTranslations extends Translations {
           'reschedule_tomorrow': 'Lên lịch ngày mai',
           'delay_one_hour': 'Hoãn 1 giờ',
           'enter_title_error': 'Vui lòng nhập tiêu đề',
-          'enter_note': 'Nhập ghi chú',
+          'add_note_hint': 'Thêm ghi chú (tùy chọn)',
           'tomorrow': 'Ngày mai',
           '3_days_later': '3 Ngày',
           'this_sunday': 'Chủ nhật',
@@ -423,6 +460,17 @@ class AppTranslations extends Translations {
           'add_new_category': 'Danh mục mới',
           'enter_category_name': 'Nhập tên danh mục',
           'add': 'Thêm',
+          'attach': 'Đính kèm',
+          'attachments': 'Tệp đính kèm',
+          'add_attachment': 'Thêm tệp',
+          'take_photo': 'Chụp ảnh',
+          'choose_gallery': 'Chọn từ thư viện',
+          'choose_file': 'Chọn tệp',
+          'add_link': 'Thêm liên kết',
+          'image_added': 'Đã thêm ảnh',
+          'file_added': 'Đã thêm tệp',
+          'link_added': 'Đã thêm liên kết',
+          'save_changes': 'Lưu thay đổi',
           // Task Detail
           'task_detail': 'Chi tiết công việc',
           'delete_task': 'Xóa việc',
@@ -434,15 +482,39 @@ class AppTranslations extends Translations {
           'task_completed': 'Đã hoàn thành!',
           'task_marked_todo': 'Đã đánh dấu chưa làm',
 
-          // Focus Screen
-          'focus_title': 'Chế độ tập trung',
-          'pomodoro_timer': 'Đồng hồ Pomodoro',
-          'start': 'Bắt đầu',
-          'pause': 'Tạm dừng',
-          'reset': 'Đặt lại',
-          'select_task': 'Chọn nhiệm vụ',
-          'change_task': 'Đổi nhiệm vụ',
-          'focus_completed': 'Hoàn thành Pomodoro! Tuyệt vời! 🎉',
+          // Focus Screen (REMOVED)
+
+          // Manage Screen
+          'notes_tab': 'Ghi chú',
+          'diary_tab': 'Nhật ký',
+          'all': 'Tất cả',
+          'no_notes': 'Chưa có ghi chú',
+          'no_diaries': 'Chưa có nhật ký',
+          'note_deleted': 'Đã xóa ghi chú',
+          'diary_deleted': 'Đã xóa nhật ký',
+          'event_deleted': 'Đã xóa sự kiện',
+
+          // Add Forms
+          'add_note': 'Thêm Ghi Chú',
+          'add_diary': 'Thêm Nhật Ký',
+          'add_event': 'Thêm Sự Kiện',
+          'note_title': 'Tiêu đề ghi chú',
+          'diary_title': 'Tiêu đề nhật ký',
+          'event_title': 'Tiêu đề sự kiện',
+          'content': 'Nội dung',
+          'enter_content': 'Nhập nội dung',
+          'show_time': 'Hiển thị thời gian',
+          'event_description': 'Mô tả (Tùy chọn)',
+          'has_notification': 'Bật thông báo',
+          'is_recurring': 'Lặp lại hàng năm',
+          'note_saved': 'Đã lưu ghi chú',
+          'diary_saved': 'Đã lưu nhật ký',
+          'event_saved': 'Đã lưu sự kiện',
+
+          // Planning Prompt
+          'planning_prompt': 'Bạn có kế hoạch gì không?',
+          'add_todo': 'Thêm TODO',
+          'choose_type': 'Chọn loại để thêm',
 
           // Profile Screen
           'profile_title': 'Hồ sơ',

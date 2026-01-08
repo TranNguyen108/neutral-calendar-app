@@ -10,6 +10,7 @@ class ReportView extends GetView<ReportController> {
     Get.put(ReportController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('report_title'.tr),
         elevation: 0,

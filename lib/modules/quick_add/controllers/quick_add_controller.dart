@@ -3,18 +3,19 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/models/task.dart';
-import '../../../core/models/project.dart';
-import '../../../core/repositories/project_repository.dart';
+import '../../../core/models/attachment.dart';
 import '../../../core/services/natural_language_parser.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/attachment_service.dart';
+import '../../../core/services/widget_service.dart';
 import '../../calendar/controllers/calendar_controller.dart';
 import '../../today/controllers/today_controller.dart';
 
 class QuickAddController extends GetxController {
   final NaturalLanguageParser _parser = Get.find();
   final StorageService _storage = Get.find<StorageService>();
-  final ProjectRepository _projectRepo = Get.find<ProjectRepository>();
+  final AttachmentService _attachmentService = Get.find<AttachmentService>();
 
   NotificationService get _notifications {
     if (Get.isRegistered<NotificationService>()) {
@@ -25,18 +26,20 @@ class QuickAddController extends GetxController {
 
   final titleController = TextEditingController();
   final noteController = TextEditingController();
+  final subtaskController = TextEditingController();
   final selectedTime = Rx<TimeOfDay?>(null);
   final selectedEndTime = Rx<TimeOfDay?>(null);
   final selectedPriority = Priority.medium.obs;
   final selectedDate = Rx<DateTime?>(null);
-  final selectedCategory = 'Work'.obs;
+  final selectedCategory = 'None'.obs;
   final selectedRecurrence = RecurrenceRule.none.obs;
   final selectedReminder = Rx<int?>(null);
-  final selectedProject = Rx<Project?>(null);
-  final projects = <Project>[].obs;
+  final subtasks = <String>[].obs;
+  final attachments = <Attachment>[].obs;
 
   // Default categories
   final categories = <String>[
+    'None',
     ...AppConstants.defaultCategories,
   ].obs;
 
@@ -45,21 +48,10 @@ class QuickAddController extends GetxController {
     super.onInit();
     // Load custom categories from storage
     _loadCategories();
-    // Load projects
-    _loadProjects();
     // Set default date to today
     selectedDate.value = DateTime.now();
     // Listen to title changes for parsing
     titleController.addListener(_onTitleChanged);
-  }
-
-  void _loadProjects() {
-    projects.value = _projectRepo.getProjects(includeArchived: false);
-    // Set Inbox as default if exists
-    final inbox = projects.firstWhereOrNull((p) => p.isInbox);
-    if (inbox != null) {
-      selectedProject.value = inbox;
-    }
   }
 
   @override
@@ -70,6 +62,7 @@ class QuickAddController extends GetxController {
     // Dispose controllers
     titleController.dispose();
     noteController.dispose();
+    subtaskController.dispose();
 
     super.onClose();
   }
@@ -91,6 +84,19 @@ class QuickAddController extends GetxController {
         categories.sublist(AppConstants.defaultCategories.length).toList(),
       );
       selectedCategory.value = category;
+    }
+  }
+
+  void addSubtask(String subtaskTitle) {
+    if (subtaskTitle.trim().isNotEmpty) {
+      subtasks.add(subtaskTitle.trim());
+      subtaskController.clear();
+    }
+  }
+
+  void removeSubtask(int index) {
+    if (index >= 0 && index < subtasks.length) {
+      subtasks.removeAt(index);
     }
   }
 
@@ -200,8 +206,8 @@ class QuickAddController extends GetxController {
       endTime: endDateTime,
       priority: selectedPriority.value,
       status: TaskStatus.todo,
-      category: selectedCategory.value,
-      projectId: selectedProject.value?.id,
+      category:
+          selectedCategory.value == 'None' ? null : selectedCategory.value,
       note: noteController.text.trim().isEmpty
           ? null
           : noteController.text.trim(),
@@ -209,9 +215,28 @@ class QuickAddController extends GetxController {
       updatedAt: DateTime.now(),
       recurrenceRule: selectedRecurrence.value,
       reminderMinutesBefore: selectedReminder.value,
+      attachments: attachments.toList(),
     );
 
     await _storage.addTask(task);
+
+    // Add subtasks if any
+    for (int i = 0; i < subtasks.length; i++) {
+      final subtask = Task(
+        id: '${DateTime.now().millisecondsSinceEpoch}_subtask_$i',
+        title: subtasks[i],
+        date: taskDate,
+        priority: Priority.medium,
+        status: TaskStatus.todo,
+        category:
+            selectedCategory.value == 'None' ? null : selectedCategory.value,
+        parentTaskId: task.id,
+        subtaskOrder: i,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      await _storage.addTask(subtask);
+    }
 
     // Schedule notification for new task
     if (Get.isRegistered<NotificationService>()) {
@@ -220,6 +245,9 @@ class QuickAddController extends GetxController {
 
     // Close bottom sheet FIRST
     Get.back();
+
+    // Clear form
+    _clearForm();
 
     // Then show success message
     Get.snackbar(
@@ -239,5 +267,147 @@ class QuickAddController extends GetxController {
     if (Get.isRegistered<CalendarController>()) {
       Get.find<CalendarController>().loadTasks();
     }
+
+    // Update widget after task added
+    if (Get.isRegistered<WidgetService>()) {
+      Get.find<WidgetService>().updateWidget();
+    }
+  }
+
+  void _clearForm() {
+    titleController.clear();
+    noteController.clear();
+    subtaskController.clear();
+    attachments.clear();
+    subtasks.clear();
+    selectedTime.value = null;
+    selectedEndTime.value = null;
+    selectedPriority.value = Priority.medium;
+    selectedDate.value = DateTime.now();
+    selectedCategory.value = 'None';
+    selectedRecurrence.value = RecurrenceRule.none;
+    selectedReminder.value = null;
+  }
+
+  // Attachment methods
+  Future<void> pickImageFromGallery() async {
+    final attachment = await _attachmentService.pickImageFromGallery();
+    if (attachment != null) {
+      attachments.add(attachment);
+      Get.snackbar('success'.tr, 'image_added'.tr);
+    }
+  }
+
+  Future<void> pickImageFromCamera() async {
+    final attachment = await _attachmentService.pickImageFromCamera();
+    if (attachment != null) {
+      attachments.add(attachment);
+      Get.snackbar('success'.tr, 'image_added'.tr);
+    }
+  }
+
+  Future<void> pickFile() async {
+    final attachment = await _attachmentService.pickFile();
+    if (attachment != null) {
+      attachments.add(attachment);
+      Get.snackbar('success'.tr, 'file_added'.tr);
+    }
+  }
+
+  void removeAttachment(Attachment attachment) {
+    attachments.remove(attachment);
+    _attachmentService.deleteAttachment(attachment);
+  }
+
+  void showAttachmentPicker() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Get.theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text('take_photo'.tr),
+              onTap: () {
+                Get.back();
+                pickImageFromCamera();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text('choose_gallery'.tr),
+              onTap: () {
+                Get.back();
+                pickImageFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file),
+              title: Text('choose_file'.tr),
+              onTap: () {
+                Get.back();
+                pickFile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: Text('add_link'.tr),
+              onTap: () {
+                Get.back();
+                _showAddLinkDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddLinkDialog() {
+    final linkController = TextEditingController();
+    Get.dialog(
+      AlertDialog(
+        title: Text('add_link'.tr),
+        content: TextField(
+          controller: linkController,
+          decoration: const InputDecoration(
+            hintText: 'https://...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              if (linkController.text.trim().isNotEmpty) {
+                // Create a text attachment with the link
+                final attachment = Attachment(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  fileName: linkController.text.trim(),
+                  filePath: linkController.text.trim(),
+                  type: AttachmentType.other,
+                  fileSizeBytes: 0,
+                );
+                attachments.add(attachment);
+                Get.back();
+                Get.snackbar('success'.tr, 'link_added'.tr);
+              }
+            },
+            child: Text('add'.tr),
+          ),
+        ],
+      ),
+    );
   }
 }

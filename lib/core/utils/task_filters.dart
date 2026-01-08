@@ -41,22 +41,19 @@ extension TaskListFilters on List<Task> {
   /// Takes up to [limit] tasks (default: 3)
   List<Task> urgent({int limit = 3}) {
     final now = DateTime.now();
+    const threshold = AppConstants.urgentTaskThresholdMinutes;
+
     return where((task) {
+      // Skip completed tasks early
       if (task.status == TaskStatus.done) return false;
 
-      // High priority tasks
-      if (task.priority == Priority.high) return true;
+      // High priority or overdue tasks
+      if (task.priority == Priority.high || task.isOverdue) return true;
 
-      // Overdue tasks
-      if (task.isOverdue) return true;
-
-      // Tasks starting within urgent threshold
+      // Tasks starting within threshold (combine conditions)
       if (task.startTime != null) {
-        final diff = task.startTime!.difference(now);
-        if (diff.inMinutes > 0 &&
-            diff.inMinutes <= AppConstants.urgentTaskThresholdMinutes) {
-          return true;
-        }
+        final diffMinutes = task.startTime!.difference(now).inMinutes;
+        return diffMinutes > 0 && diffMinutes <= threshold;
       }
 
       return false;
@@ -70,24 +67,22 @@ extension TaskListFilters on List<Task> {
 
   /// Sorts tasks by: overdue first, then priority (high to low), then by start time
   List<Task> sortedByUrgency() {
-    final sorted = List<Task>.from(this);
-    sorted.sort((a, b) {
-      // Overdue tasks first
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
+    return List<Task>.from(this)
+      ..sort((a, b) {
+        // Overdue tasks first
+        if (a.isOverdue && !b.isOverdue) return -1;
+        if (!a.isOverdue && b.isOverdue) return 1;
 
-      // Then by priority (high to low)
-      if (a.priority != b.priority) {
-        return b.priority.index - a.priority.index;
-      }
+        // Then by priority (high to low)
+        final priorityCompare = b.priority.index - a.priority.index;
+        if (priorityCompare != 0) return priorityCompare;
 
-      // Then by time
-      if (a.startTime == null && b.startTime == null) return 0;
-      if (a.startTime == null) return 1;
-      if (b.startTime == null) return -1;
-      return a.startTime!.compareTo(b.startTime!);
-    });
-    return sorted;
+        // Then by start time (nulls last)
+        if (a.startTime == null && b.startTime == null) return 0;
+        if (a.startTime == null) return 1;
+        if (b.startTime == null) return -1;
+        return a.startTime!.compareTo(b.startTime!);
+      });
   }
 
   /// Returns tasks for a specific project

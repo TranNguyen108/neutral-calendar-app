@@ -8,6 +8,7 @@ import '../../../core/services/daily_summary_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/recurrence_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/widget_service.dart';
 import '../../../core/utils/task_filters.dart';
 
 class TodayController extends GetxController {
@@ -124,6 +125,11 @@ class TodayController extends GetxController {
     }
 
     loadTodayTasks();
+
+    // Update widget after task status change
+    if (Get.isRegistered<WidgetService>()) {
+      Get.find<WidgetService>().updateWidget();
+    }
   }
 
   Future<void> deleteTask(Task task) async {
@@ -133,6 +139,11 @@ class TodayController extends GetxController {
       await _notifications.cancelTaskReminder(task.id);
     }
     loadTodayTasks();
+
+    // Update widget after task deletion
+    if (Get.isRegistered<WidgetService>()) {
+      Get.find<WidgetService>().updateWidget();
+    }
   }
 
   Future<void> rescheduleToTomorrow(Task task) async {

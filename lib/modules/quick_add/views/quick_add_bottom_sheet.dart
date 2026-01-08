@@ -18,7 +18,10 @@ class QuickAddBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(QuickAddController());
+    // Use Get.find if exists, otherwise create new instance
+    final controller = Get.isRegistered<QuickAddController>()
+        ? Get.find<QuickAddController>()
+        : Get.put(QuickAddController());
 
     return Container(
       padding: EdgeInsets.only(
@@ -92,18 +95,131 @@ class QuickAddBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
+                // Priority Quick Selection (3 buttons)
+                Text(
+                  'priority'.tr,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Obx(() => Row(
+                      children: [
+                        Expanded(
+                          child: _buildPriorityButton(
+                            controller,
+                            Priority.low,
+                            'low'.tr,
+                            Colors.green,
+                            Icons.arrow_downward,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildPriorityButton(
+                            controller,
+                            Priority.medium,
+                            'medium'.tr,
+                            Colors.orange,
+                            Icons.remove,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildPriorityButton(
+                            controller,
+                            Priority.high,
+                            'high'.tr,
+                            Colors.red,
+                            Icons.priority_high,
+                          ),
+                        ),
+                      ],
+                    )),
+                const SizedBox(height: 16),
+
+                // Subtasks Section
+                Text(
+                  'subtasks'.tr,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Subtask input and add button
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller.subtaskController,
+                        decoration: InputDecoration(
+                          hintText: 'add_subtask'.tr,
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          isDense: true,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (value) {
+                          controller.addSubtask(value);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, size: 28),
+                      color: Colors.blue,
+                      onPressed: () {
+                        controller
+                            .addSubtask(controller.subtaskController.text);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Display added subtasks
+                Obx(() => controller.subtasks.isEmpty
+                    ? const SizedBox.shrink()
+                    : Column(
+                        children: controller.subtasks
+                            .asMap()
+                            .entries
+                            .map(
+                              (entry) => Card(
+                                margin: const EdgeInsets.only(bottom: 4),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(
+                                      Icons.subdirectory_arrow_right,
+                                      size: 20),
+                                  title: Text(
+                                    entry.value,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    onPressed: () {
+                                      controller.removeSubtask(entry.key);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      )),
+                const SizedBox(height: 16),
+
                 // Action Buttons Row
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildActionButton(
-                      context,
-                      controller,
-                      icon: Icons.folder_outlined,
-                      label: 'project'.tr,
-                      onTap: () => _showProjectPicker(controller, context),
-                    ),
                     _buildActionButton(
                       context,
                       controller,
@@ -135,13 +251,52 @@ class QuickAddBottomSheet extends StatelessWidget {
                     _buildActionButton(
                       context,
                       controller,
-                      icon: Icons.flag_outlined,
-                      label: 'priority'.tr,
-                      onTap: () => _showPriorityPicker(controller, context),
+                      icon: Icons.attach_file,
+                      label: 'attach'.tr,
+                      onTap: controller.showAttachmentPicker,
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+
+                // Attachments display
+                Obx(() {
+                  if (controller.attachments.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'attachments'.tr,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: controller.attachments.map((attachment) {
+                          return Chip(
+                            avatar: Icon(attachment.icon, size: 18),
+                            label: Text(
+                              attachment.fileName.length > 20
+                                  ? '${attachment.fileName.substring(0, 20)}...'
+                                  : attachment.fileName,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            onDeleted: () =>
+                                controller.removeAttachment(attachment),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                }),
 
                 // Add Button
                 SizedBox(
@@ -177,11 +332,9 @@ class QuickAddBottomSheet extends StatelessWidget {
       String displayText = label;
       bool hasValue = false;
 
-      if (label == 'project'.tr && controller.selectedProject.value != null) {
-        displayText = controller.selectedProject.value!.name;
-        hasValue = true;
-      } else if (label == 'category'.tr &&
-          controller.selectedCategory.value.isNotEmpty) {
+      if (label == 'category'.tr &&
+          controller.selectedCategory.value.isNotEmpty &&
+          controller.selectedCategory.value != 'None') {
         displayText = controller.selectedCategory.value;
         hasValue = true;
       } else if (label == 'date_time'.tr &&
@@ -427,35 +580,6 @@ class QuickAddBottomSheet extends StatelessWidget {
     );
   }
 
-  // Show Priority Picker Dialog
-  void _showPriorityPicker(
-      QuickAddController controller, BuildContext context) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('priority'.tr),
-        content: Obx(() => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPriorityDialogChip(controller, Priority.high, 'high'.tr,
-                    Colors.red, Icons.priority_high),
-                const SizedBox(height: 8),
-                _buildPriorityDialogChip(controller, Priority.medium,
-                    'medium'.tr, Colors.orange, Icons.remove),
-                const SizedBox(height: 8),
-                _buildPriorityDialogChip(controller, Priority.low, 'low'.tr,
-                    Colors.green, Icons.arrow_downward),
-              ],
-            )),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('cancel'.tr),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Helper chips for dialogs
   Widget _buildDateDialogChip(QuickAddController controller, String label,
       DateTime date, BuildContext context) {
@@ -471,39 +595,6 @@ class QuickAddBottomSheet extends StatelessWidget {
       selectedColor: Colors.blue.withValues(alpha: 0.3),
       checkmarkColor: Colors.blue,
       side: BorderSide(color: isSelected ? Colors.blue : Colors.grey.shade300),
-    );
-  }
-
-  Widget _buildPriorityDialogChip(QuickAddController controller,
-      Priority priority, String label, Color color, IconData icon) {
-    final isSelected = controller.selectedPriority.value == priority;
-    return InkWell(
-      onTap: () {
-        controller.selectedPriority.value = priority;
-        Get.back();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
-          border: Border.all(
-              color: isSelected ? color : Colors.grey.shade300, width: 2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? color : Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : Colors.grey,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -574,53 +665,48 @@ class QuickAddBottomSheet extends StatelessWidget {
     );
   }
 
-  void _showProjectPicker(
+  // Helper method to build inline priority button
+  Widget _buildPriorityButton(
     QuickAddController controller,
-    BuildContext context,
+    Priority priority,
+    String label,
+    Color color,
+    IconData icon,
   ) {
-    Get.dialog(
-      AlertDialog(
-        title: Text('project'.tr),
-        content: Obx(
-          () => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: controller.projects.map((project) {
-              final isSelected =
-                  controller.selectedProject.value?.id == project.id;
-              return ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Color(project.colorValue),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    IconData(project.iconCodePoint,
-                        fontFamily: 'MaterialIcons'),
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                title: Text(project.name),
-                selected: isSelected,
-                onTap: () {
-                  controller.selectedProject.value = project;
-                  Get.back();
-                },
-                trailing: isSelected
-                    ? const Icon(Icons.check, color: Colors.blue)
-                    : null,
-              );
-            }).toList(),
+    final isSelected = controller.selectedPriority.value == priority;
+    return InkWell(
+      onTap: () {
+        controller.selectedPriority.value = priority;
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
           ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('cancel'.tr),
-          ),
-        ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? color : Colors.grey.shade600,
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? color : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

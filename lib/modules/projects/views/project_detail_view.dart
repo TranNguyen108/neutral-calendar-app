@@ -13,6 +13,7 @@ class ProjectDetailView extends GetView<ProjectDetailController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Obx(() => Text(controller.project.value?.name ?? 'project'.tr)),
         elevation: 0,
@@ -269,8 +270,8 @@ class ProjectDetailView extends GetView<ProjectDetailController> {
         task.priority == Priority.high
             ? Icons.flag
             : task.priority == Priority.low
-            ? Icons.flag_outlined
-            : null,
+                ? Icons.flag_outlined
+                : null,
         color: task.priority == Priority.high ? Colors.red : Colors.grey,
         size: 20,
       ),

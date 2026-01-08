@@ -2,13 +2,14 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../models/task.dart';
+import '../repositories/repository_validators.dart';
 import '../repositories/task_repository.dart';
 import '../services/storage_service.dart';
 import '../utils/logger.dart';
 
 /// Implementation of TaskRepository using StorageService
 /// This layer abstracts storage details from business logic
-class TaskRepositoryImpl implements TaskRepository {
+class TaskRepositoryImpl with RepositoryValidators implements TaskRepository {
   final StorageService _storage;
   final Logger _logger = Get.find<Logger>();
 
@@ -74,13 +75,8 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> addTask(Task task) async {
     try {
-      // Defensive checks: validate task data
-      if (task.id.isEmpty) {
-        throw Exception('Cannot add task with empty ID');
-      }
-      if (task.title.trim().isEmpty) {
-        throw Exception('Cannot add task with empty title');
-      }
+      validateId(task.id, fieldName: 'task.id');
+      validateName(task.title, fieldName: 'task.title');
 
       // Check for duplicate ID
       final existingTask = getTaskById(task.id);
@@ -97,20 +93,15 @@ class TaskRepositoryImpl implements TaskRepository {
     } catch (e) {
       _logger.error('Error adding task: ${task.id}',
           tag: 'TaskRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
   }
 
   @override
   Future<void> updateTask(Task task) async {
     try {
-      // Defensive checks: validate task data
-      if (task.id.isEmpty) {
-        throw Exception('Cannot update task with empty ID');
-      }
-      if (task.title.trim().isEmpty) {
-        throw Exception('Cannot update task with empty title');
-      }
+      validateId(task.id, fieldName: 'task.id');
+      validateName(task.title, fieldName: 'task.title');
 
       // Verify task exists
       final existingTask = getTaskById(task.id);
@@ -126,25 +117,21 @@ class TaskRepositoryImpl implements TaskRepository {
     } catch (e) {
       _logger.error('Error updating task: ${task.id}',
           tag: 'TaskRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
   }
 
   @override
   Future<void> deleteTask(String taskId) async {
     try {
-      // Defensive check: validate ID
-      if (taskId.isEmpty) {
-        throw Exception('Cannot delete task with empty ID');
-      }
+      validateId(taskId, fieldName: 'taskId');
 
-      // Check if task has subtasks
+      // Check if task has subtasks and delete them first
       final subtasks = getSubtasks(taskId);
       if (subtasks.isNotEmpty) {
         _logger.warning(
             'Deleting task with ${subtasks.length} subtasks: $taskId',
             tag: 'TaskRepository');
-        // Delete all subtasks first
         for (final subtask in subtasks) {
           await _storage.deleteTask(subtask.id);
         }
@@ -155,7 +142,7 @@ class TaskRepositoryImpl implements TaskRepository {
     } catch (e) {
       _logger.error('Error deleting task: $taskId',
           tag: 'TaskRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
   }
 
@@ -236,35 +223,25 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> addSubtask(String parentTaskId, Task subtask) async {
     try {
-      // Defensive checks
-      if (parentTaskId.isEmpty) {
-        throw Exception('Cannot add subtask: empty parentTaskId');
-      }
-      if (subtask.id.isEmpty) {
-        throw Exception('Cannot add subtask with empty ID');
-      }
-      if (subtask.title.trim().isEmpty) {
-        throw Exception('Cannot add subtask with empty title');
-      }
+      validateId(parentTaskId, fieldName: 'parentTaskId');
+      validateId(subtask.id, fieldName: 'subtask.id');
+      validateName(subtask.title, fieldName: 'subtask.title');
 
       // Verify parent task exists
-      final parentTask = getTaskById(parentTaskId);
-      if (parentTask == null) {
-        throw Exception('Parent task not found: $parentTaskId');
-      }
+      validateNotNull(getTaskById(parentTaskId), fieldName: 'parentTask');
 
-      // Get existing subtasks to determine order
+      // Get next order number
       final existingSubtasks = getSubtasks(parentTaskId);
-      final maxOrder = existingSubtasks.isEmpty
+      final nextOrder = existingSubtasks.isEmpty
           ? 0
           : existingSubtasks
-              .map((s) => s.subtaskOrder)
-              .reduce((a, b) => a > b ? a : b);
+                  .map((s) => s.subtaskOrder)
+                  .reduce((a, b) => a > b ? a : b) +
+              1;
 
-      // Create subtask with proper parent reference and order
       final newSubtask = subtask.copyWith(
         parentTaskId: parentTaskId,
-        subtaskOrder: maxOrder + 1,
+        subtaskOrder: nextOrder,
         updatedAt: DateTime.now(),
       );
 
@@ -272,7 +249,6 @@ class TaskRepositoryImpl implements TaskRepository {
       _logger.info('Subtask added to parent $parentTaskId: ${newSubtask.id}',
           tag: 'TaskRepository');
 
-      // Update parent task status based on new subtask
       await updateParentTaskStatus(parentTaskId);
     } catch (e) {
       _logger.error('Error adding subtask to parent: $parentTaskId',

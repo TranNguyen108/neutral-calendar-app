@@ -6,6 +6,8 @@ import '../../../core/models/task.dart';
 import '../../../core/repositories/task_repository.dart';
 import '../../../routes/app_routes.dart';
 import '../../quick_add/views/quick_add_bottom_sheet.dart';
+import '../../add_item/views/add_item_bottom_sheet.dart';
+import '../../task_quick_view/views/task_quick_view.dart';
 import '../controllers/today_controller.dart';
 import 'widgets/suggestions_card.dart';
 
@@ -18,6 +20,7 @@ class TodayView extends GetView<TodayController> {
     Get.put(TodayController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('today_title'.tr),
         elevation: 0,
@@ -28,7 +31,10 @@ class TodayView extends GetView<TodayController> {
           ),
         ],
       ),
-      body: Obx(() => RefreshIndicator(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Obx(
+          () => RefreshIndicator(
             onRefresh: () async {
               controller.loadTodayTasks();
             },
@@ -202,12 +208,75 @@ class TodayView extends GetView<TodayController> {
                     return const SizedBox.shrink();
                   }),
                 ),
+                // Planning Prompt Section
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: InkWell(
+                        onTap: () => AddItemBottomSheet.show(),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Colors.blue,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'planning_prompt'.tr,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap to add TODO, Event, Note, or Diary',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right,
+                                  color: Colors.grey),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 100),
                 ),
               ],
             ),
-          )),
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => QuickAddBottomSheet.show(),
         tooltip: 'quick_add'.tr,
@@ -363,7 +432,7 @@ class TodayView extends GetView<TodayController> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: InkWell(
             onTap: () {
-              Get.toNamed(AppRoutes.taskDetail, arguments: task);
+              TaskQuickView.show(task);
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(

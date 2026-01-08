@@ -19,73 +19,18 @@ class RecurrenceService extends GetxService {
       return null;
     }
 
-    DateTime nextDate;
-    DateTime? nextStartTime;
-    DateTime? nextEndTime;
+    // Calculate days to add based on recurrence rule
+    final daysToAdd = _calculateDaysToAdd(completedTask);
+    if (daysToAdd == null) return null;
 
-    switch (completedTask.recurrenceRule) {
-      case RecurrenceRule.daily:
-        nextDate = completedTask.date.add(const Duration(days: 1));
-        if (completedTask.startTime != null) {
-          nextStartTime = completedTask.startTime!.add(const Duration(days: 1));
-        }
-        if (completedTask.endTime != null) {
-          nextEndTime = completedTask.endTime!.add(const Duration(days: 1));
-        }
-        break;
-
-      case RecurrenceRule.weekly:
-        nextDate = completedTask.date.add(const Duration(days: 7));
-        if (completedTask.startTime != null) {
-          nextStartTime = completedTask.startTime!.add(const Duration(days: 7));
-        }
-        if (completedTask.endTime != null) {
-          nextEndTime = completedTask.endTime!.add(const Duration(days: 7));
-        }
-        break;
-
-      case RecurrenceRule.monthly:
-        nextDate = DateTime(
-          completedTask.date.year,
-          completedTask.date.month + 1,
-          completedTask.date.day,
-        );
-        if (completedTask.startTime != null) {
-          nextStartTime = DateTime(
-            completedTask.startTime!.year,
-            completedTask.startTime!.month + 1,
-            completedTask.startTime!.day,
-            completedTask.startTime!.hour,
-            completedTask.startTime!.minute,
-          );
-        }
-        if (completedTask.endTime != null) {
-          nextEndTime = DateTime(
-            completedTask.endTime!.year,
-            completedTask.endTime!.month + 1,
-            completedTask.endTime!.day,
-            completedTask.endTime!.hour,
-            completedTask.endTime!.minute,
-          );
-        }
-        break;
-
-      case RecurrenceRule.custom:
-        // For custom, use interval in days
-        final interval = completedTask.recurrenceInterval ?? 1;
-        nextDate = completedTask.date.add(Duration(days: interval));
-        if (completedTask.startTime != null) {
-          nextStartTime =
-              completedTask.startTime!.add(Duration(days: interval));
-        }
-        if (completedTask.endTime != null) {
-          nextEndTime = completedTask.endTime!.add(Duration(days: interval));
-        }
-        break;
-
-      case RecurrenceRule.none:
-        return null;
-    }
+    // Calculate next dates
+    final nextDate = _addDaysToDate(completedTask.date, daysToAdd);
+    final nextStartTime = completedTask.startTime != null
+        ? _addDaysToDate(completedTask.startTime!, daysToAdd)
+        : null;
+    final nextEndTime = completedTask.endTime != null
+        ? _addDaysToDate(completedTask.endTime!, daysToAdd)
+        : null;
 
     // Check if recurrence should end
     if (completedTask.recurrenceEndDate != null &&
@@ -103,16 +48,49 @@ class RecurrenceService extends GetxService {
       endTime: nextEndTime,
       priority: completedTask.priority,
       status: TaskStatus.todo,
-      category: completedTask.category,
+      projectId: completedTask.projectId,
+      sectionId: completedTask.sectionId,
       note: completedTask.note,
       createdAt: now,
       updatedAt: now,
-      totalFocusMinutes: 0, // Reset focus minutes for new occurrence
+      totalFocusMinutes: 0,
       recurrenceRule: completedTask.recurrenceRule,
       recurrenceInterval: completedTask.recurrenceInterval,
       recurrenceEndDate: completedTask.recurrenceEndDate,
       reminderMinutesBefore: completedTask.reminderMinutesBefore,
     );
+  }
+
+  /// Calculate days to add for recurrence rule
+  int? _calculateDaysToAdd(Task task) {
+    switch (task.recurrenceRule) {
+      case RecurrenceRule.daily:
+        return 1;
+      case RecurrenceRule.weekly:
+        return 7;
+      case RecurrenceRule.monthly:
+        return null; // Monthly is special case
+      case RecurrenceRule.custom:
+        return task.recurrenceInterval ?? 1;
+      case RecurrenceRule.none:
+        return null;
+    }
+  }
+
+  /// Add days to a DateTime
+  DateTime _addDaysToDate(DateTime date, int? days) {
+    if (days == null) {
+      // Monthly recurrence
+      return DateTime(
+        date.year,
+        date.month + 1,
+        date.day,
+        date.hour,
+        date.minute,
+        date.second,
+      );
+    }
+    return date.add(Duration(days: days));
   }
 
   /// Handle task completion - generate next occurrence if recurring

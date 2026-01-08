@@ -113,9 +113,8 @@ class MigrationService extends GetxService {
     }
 
     // 5. Move tasks without category to Inbox
-    final uncategorized = tasks
-        .where((t) => t.category == null || t.category!.isEmpty)
-        .toList();
+    final uncategorized =
+        tasks.where((t) => t.category == null || t.category!.isEmpty).toList();
 
     if (uncategorized.isNotEmpty) {
       Get.log('Moving ${uncategorized.length} uncategorized tasks to Inbox');

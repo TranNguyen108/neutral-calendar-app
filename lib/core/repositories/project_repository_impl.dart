@@ -3,11 +3,14 @@ import 'package:get/get.dart';
 import '../models/project.dart';
 import '../models/section.dart';
 import '../repositories/project_repository.dart';
+import '../repositories/repository_validators.dart';
 import '../services/storage_service.dart';
 import '../utils/logger.dart';
 
 /// Implementation of ProjectRepository using StorageService
-class ProjectRepositoryImpl implements ProjectRepository {
+class ProjectRepositoryImpl
+    with RepositoryValidators
+    implements ProjectRepository {
   final StorageService _storage;
   final Logger _logger = Get.find<Logger>();
 
@@ -165,13 +168,8 @@ class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Future<void> addProject(Project project) async {
     try {
-      // Defensive checks: validate project data
-      if (project.id.isEmpty) {
-        throw Exception('Cannot add project with empty ID');
-      }
-      if (project.name.trim().isEmpty) {
-        throw Exception('Cannot add project with empty name');
-      }
+      validateId(project.id, fieldName: 'project.id');
+      validateName(project.name, fieldName: 'project.name');
 
       // Check for duplicate ID
       final existingProject = getProjectById(project.id);
@@ -192,20 +190,15 @@ class ProjectRepositoryImpl implements ProjectRepository {
     } catch (e) {
       _logger.error('Error adding project: ${project.id}',
           tag: 'ProjectRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
   }
 
   @override
   Future<void> updateProject(Project project) async {
     try {
-      // Defensive checks: validate project data
-      if (project.id.isEmpty) {
-        throw Exception('Cannot update project with empty ID');
-      }
-      if (project.name.trim().isEmpty) {
-        throw Exception('Cannot update project with empty name');
-      }
+      validateId(project.id, fieldName: 'project.id');
+      validateName(project.name, fieldName: 'project.name');
 
       final projects = getProjects(includeArchived: true);
       final index = projects.indexWhere((p) => p.id == project.id);
@@ -226,7 +219,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
     } catch (e) {
       _logger.error('Error updating project: ${project.id}',
           tag: 'ProjectRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
   }
 
@@ -234,16 +227,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
   Future<void> deleteProject(String projectId,
       {String? moveTasksToProjectId}) async {
     try {
-      // Defensive checks
-      if (projectId.isEmpty) {
-        throw Exception('Cannot delete project with empty ID');
-      }
+      validateId(projectId, fieldName: 'projectId');
 
       // Cannot delete Inbox
       if (projectId == Project.inboxId) {
-        _logger.error('Attempted to delete Inbox project',
-            tag: 'ProjectRepository');
-        throw Exception('Cannot delete Inbox project');
+        throw ArgumentError('Cannot delete Inbox project');
       }
 
       // Verify project exists
@@ -251,55 +239,12 @@ class ProjectRepositoryImpl implements ProjectRepository {
       if (project == null) {
         _logger.warning('Project not found for deletion: $projectId',
             tag: 'ProjectRepository');
-        return; // Already deleted or doesn't exist
+        return;
       }
 
-      // Handle orphan tasks
-      final tasks = _storage.getTasks();
-      final orphanTasks = tasks.where((t) => t.projectId == projectId).toList();
-
-      if (orphanTasks.isNotEmpty) {
-        final targetProjectId = moveTasksToProjectId ?? Project.inboxId;
-
-        // Validate target project exists
-        if (targetProjectId != Project.inboxId) {
-          final targetProject = getProjectById(targetProjectId);
-          if (targetProject == null) {
-            _logger.warning(
-                'Target project not found: $targetProjectId, using Inbox',
-                tag: 'ProjectRepository');
-            // Fall back to Inbox
-            for (var task in orphanTasks) {
-              final updated = task.copyWith(
-                projectId: Project.inboxId,
-                clearSectionId: true,
-                updatedAt: DateTime.now(),
-              );
-              await _storage.updateTask(updated);
-            }
-          } else {
-            for (var task in orphanTasks) {
-              final updated = task.copyWith(
-                projectId: targetProjectId,
-                clearSectionId: true,
-                updatedAt: DateTime.now(),
-              );
-              await _storage.updateTask(updated);
-            }
-          }
-        } else {
-          for (var task in orphanTasks) {
-            final updated = task.copyWith(
-              projectId: targetProjectId,
-              clearSectionId: true,
-              updatedAt: DateTime.now(),
-            );
-            await _storage.updateTask(updated);
-          }
-        }
-        _logger.info('Moved ${orphanTasks.length} tasks to $targetProjectId',
-            tag: 'ProjectRepository');
-      }
+      // Move orphan tasks to target project (default: Inbox)
+      await _moveProjectTasks(
+          projectId, moveTasksToProjectId ?? Project.inboxId);
 
       // Delete project
       final projects = getProjects(includeArchived: true);
@@ -307,22 +252,55 @@ class ProjectRepositoryImpl implements ProjectRepository {
       await _storage.box
           .write('projects', projects.map((p) => p.toJson()).toList());
 
-      // Delete sections
-      final allSections = _storage.box
-              .read<List>('sections')
-              ?.map((json) => Section.fromJson(json as Map<String, dynamic>))
-              .where((s) => s.projectId != projectId)
-              .toList() ??
-          [];
-      await _storage.box
-          .write('sections', allSections.map((s) => s.toJson()).toList());
+      // Delete associated sections
+      await _deleteSectionsForProject(projectId);
 
       _logger.info('Project deleted: $projectId', tag: 'ProjectRepository');
     } catch (e) {
       _logger.error('Error deleting project: $projectId',
           tag: 'ProjectRepository', error: e);
-      rethrow; // Let caller handle
+      rethrow;
     }
+  }
+
+  /// Helper: Move all tasks from one project to another
+  Future<void> _moveProjectTasks(
+      String fromProjectId, String toProjectId) async {
+    final tasks = _storage.getTasks();
+    final orphanTasks = tasks.where((t) => t.projectId == fromProjectId);
+
+    if (orphanTasks.isEmpty) return;
+
+    // Validate target project exists (except Inbox which always exists)
+    if (toProjectId != Project.inboxId && getProjectById(toProjectId) == null) {
+      _logger.warning('Target project not found, using Inbox',
+          tag: 'ProjectRepository');
+      toProjectId = Project.inboxId;
+    }
+
+    for (var task in orphanTasks) {
+      final updated = task.copyWith(
+        projectId: toProjectId,
+        clearSectionId: true,
+        updatedAt: DateTime.now(),
+      );
+      await _storage.updateTask(updated);
+    }
+
+    _logger.info('Moved ${orphanTasks.length} tasks to $toProjectId',
+        tag: 'ProjectRepository');
+  }
+
+  /// Helper: Delete all sections for a project
+  Future<void> _deleteSectionsForProject(String projectId) async {
+    final allSections = _storage.box
+            .read<List>('sections')
+            ?.map((json) => Section.fromJson(json as Map<String, dynamic>))
+            .where((s) => s.projectId != projectId)
+            .toList() ??
+        [];
+    await _storage.box
+        .write('sections', allSections.map((s) => s.toJson()).toList());
   }
 
   @override

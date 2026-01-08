@@ -14,6 +14,7 @@ class ProjectsView extends GetView<ProjectsController> {
     Get.put(ProjectsController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('projects'.tr),
         elevation: 0,

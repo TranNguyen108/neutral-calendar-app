@@ -81,9 +81,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
 
   Future<void> _toggleSubtask(Task subtask) async {
     final updated = subtask.copyWith(
-      status: subtask.status == TaskStatus.done
-          ? TaskStatus.todo
-          : TaskStatus.done,
+      status:
+          subtask.status == TaskStatus.done ? TaskStatus.todo : TaskStatus.done,
       updatedAt: DateTime.now(),
     );
     await storage.updateTask(updated);
@@ -104,6 +103,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
         : taskRepo.calculateTaskProgress(task.id);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Task Detail'),
         actions: [
@@ -529,9 +529,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
             }
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: task.status == TaskStatus.done
-                ? Colors.orange
-                : Colors.green,
+            backgroundColor:
+                task.status == TaskStatus.done ? Colors.orange : Colors.green,
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
           child: Text(
@@ -637,8 +636,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
               title: const Text('Take Photo'),
               onTap: () async {
                 Get.back();
-                final attachment = await attachmentService
-                    .pickImageFromCamera();
+                final attachment =
+                    await attachmentService.pickImageFromCamera();
                 if (attachment != null) {
                   _addAttachment(attachment);
                 }
@@ -649,8 +648,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
               title: const Text('Choose from Gallery'),
               onTap: () async {
                 Get.back();
-                final attachment = await attachmentService
-                    .pickImageFromGallery();
+                final attachment =
+                    await attachmentService.pickImageFromGallery();
                 if (attachment != null) {
                   _addAttachment(attachment);
                 }
@@ -709,9 +708,8 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     if (confirm == true) {
       await attachmentService.deleteAttachment(attachment);
       final updatedTask = task.copyWith(
-        attachments: task.attachments
-            .where((a) => a.id != attachment.id)
-            .toList(),
+        attachments:
+            task.attachments.where((a) => a.id != attachment.id).toList(),
         updatedAt: DateTime.now(),
       );
       await storage.updateTask(updatedTask);

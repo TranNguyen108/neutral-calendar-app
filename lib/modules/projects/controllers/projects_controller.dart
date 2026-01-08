@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/models/project.dart';
+import '../../../core/models/task.dart';
 import '../../../core/repositories/project_repository.dart';
-import '../../../core/utils/task_filters.dart';
 
 /// Controller for managing all projects
 class ProjectsController extends GetxController {
@@ -134,12 +134,18 @@ class ProjectsController extends GetxController {
   // Get project statistics
   Map<String, int> getProjectStats(String projectId) {
     final tasks = Get.find<dynamic>().getTasks() as List;
-    final projectTasks = tasks.forProject(projectId);
+    final projectTasks = tasks.where((t) => t.projectId == projectId).toList();
 
     return {
       'total': projectTasks.length,
-      'completed': projectTasks.completed().length,
-      'today': projectTasks.forToday().length,
+      'completed':
+          projectTasks.where((t) => t.status == TaskStatus.done).length,
+      'today': projectTasks.where((t) {
+        final now = DateTime.now();
+        return t.date.year == now.year &&
+            t.date.month == now.month &&
+            t.date.day == now.day;
+      }).length,
     };
   }
 }

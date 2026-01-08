@@ -14,6 +14,7 @@ class ProfileView extends GetView<ProfileController> {
     Get.put(ProfileController());
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text('profile_title'.tr),
         elevation: 0,

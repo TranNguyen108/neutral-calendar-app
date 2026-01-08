@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../constants/app_constants.dart';
 import '../models/focus_session.dart';
 import '../models/task.dart';
+import '../models/note.dart';
+import '../models/diary.dart';
+import '../models/event.dart';
 import '../utils/logger.dart';
 import 'data_validator.dart';
 
@@ -14,9 +18,18 @@ class StorageService extends GetxService {
   // Expose box for repositories (controlled access)
   GetStorage get box => _box;
 
-  // In-memory cache to reduce disk reads
+  // In-memory caches to reduce disk reads
   List<Task>? _tasksCache;
-  bool _cacheInvalidated = true;
+  DateTime? _tasksCacheTimestamp;
+
+  List<FocusSession>? _sessionsCache;
+  DateTime? _sessionsCacheTimestamp;
+
+  static const _cacheValidityDuration = Duration(minutes: 5);
+
+  // Storage keys (centralized for easier maintenance)
+  static const _backupSuffix = '_backup';
+  static const _behaviorLogsKey = 'behaviorLogs';
 
   Future<StorageService> init() async {
     try {
@@ -29,8 +42,8 @@ class StorageService extends GetxService {
 
       return this;
     } catch (e) {
-      // If Logger is not available yet, use print as fallback
-      print('CRITICAL: StorageService init failed: $e');
+      // Critical error - use debugPrint as Logger may not be available yet
+      debugPrint('CRITICAL: StorageService init failed: $e');
       rethrow; // This is critical, app cannot run without storage
     }
   }
@@ -86,31 +99,49 @@ class StorageService extends GetxService {
     }
   }
 
-  // Invalidate cache when data changes
-  void _invalidateCache() {
+  // Invalidate specific caches
+  void _invalidateTasksCache() {
     _tasksCache = null;
-    _cacheInvalidated = true;
+    _tasksCacheTimestamp = null;
+  }
+
+  void _invalidateSessionsCache() {
+    _sessionsCache = null;
+    _sessionsCacheTimestamp = null;
+  }
+
+  void _invalidateAllCaches() {
+    _invalidateTasksCache();
+    _invalidateSessionsCache();
   }
 
   // Tasks
   List<Task> getTasks() {
-    // Return from cache if valid
-    if (!_cacheInvalidated && _tasksCache != null) {
-      return List.from(
-          _tasksCache!); // Return copy to prevent external modifications
+    // Check cache validity
+    if (_isCacheValid(_tasksCache, _tasksCacheTimestamp)) {
+      return List.from(_tasksCache!);
     }
 
     try {
       final tasksJson = _box.read<List>(AppConstants.tasksKey) ?? [];
-      _tasksCache = tasksJson.map((json) => Task.fromJson(json)).toList();
-      _cacheInvalidated = false;
+      _tasksCache = tasksJson
+          .map((json) => Task.fromJson(json as Map<String, dynamic>))
+          .toList();
+      _tasksCacheTimestamp = DateTime.now();
       return List.from(_tasksCache!);
     } catch (e) {
       _logger.error('Error loading tasks', tag: 'StorageService', error: e);
       _tasksCache = [];
-      _cacheInvalidated = false;
-      return []; // Return empty list as safe fallback
+      _tasksCacheTimestamp = DateTime.now();
+      return [];
     }
+  }
+
+  /// Check if a cache is still valid
+  bool _isCacheValid(List? cache, DateTime? timestamp) {
+    if (cache == null || timestamp == null) return false;
+    final cacheAge = DateTime.now().difference(timestamp);
+    return cacheAge < _cacheValidityDuration;
   }
 
   Future<void> saveTasks(List<Task> tasks) async {
@@ -133,7 +164,7 @@ class StorageService extends GetxService {
 
       // Atomic write with retry logic
       await _atomicWrite(AppConstants.tasksKey, tasksJson, maxRetries: 3);
-      _invalidateCache(); // Force cache refresh
+      _invalidateTasksCache(); // Force cache refresh
     } catch (e) {
       _logger.error('Error saving tasks', tag: 'StorageService', error: e);
       rethrow; // Rethrow for caller to handle
@@ -145,13 +176,12 @@ class StorageService extends GetxService {
       {int maxRetries = 3}) async {
     int attempts = 0;
     Exception? lastError;
+    final backupKey = '$key$_backupSuffix';
 
     while (attempts < maxRetries) {
       try {
         // Create backup of current data before write
         final currentData = _box.read(key);
-        final backupKey = '${key}_backup';
-
         if (currentData != null) {
           await _box.write(backupKey, currentData);
         }
@@ -193,7 +223,7 @@ class StorageService extends GetxService {
   /// Restore data from backup
   Future<void> _restoreFromBackup(String key) async {
     try {
-      final backupKey = '${key}_backup';
+      final backupKey = '$key$_backupSuffix';
       final backupData = _box.read(backupKey);
 
       if (backupData != null) {
@@ -270,42 +300,44 @@ class StorageService extends GetxService {
     List<TaskStatus>? statuses,
   }) {
     try {
-      var tasks = getTasks();
+      final tasks = getTasks();
+      final lowerQuery = query.toLowerCase();
+      final hasQuery = query.isNotEmpty;
+      final hasCategories = categories != null && categories.isNotEmpty;
+      final hasPriorities = priorities != null && priorities.isNotEmpty;
+      final hasStatuses = statuses != null && statuses.isNotEmpty;
 
-      // Search by title and note
-      if (query.isNotEmpty) {
-        tasks = tasks.where((task) {
-          final titleMatch =
-              task.title.toLowerCase().contains(query.toLowerCase());
+      // Single-pass filtering for better performance
+      return tasks.where((task) {
+        // Query filter
+        if (hasQuery) {
+          final titleMatch = task.title.toLowerCase().contains(lowerQuery);
           final noteMatch =
-              task.note?.toLowerCase().contains(query.toLowerCase()) ?? false;
-          return titleMatch || noteMatch;
-        }).toList();
-      }
+              task.note?.toLowerCase().contains(lowerQuery) ?? false;
+          if (!titleMatch && !noteMatch) return false;
+        }
 
-      // Filter by categories
-      if (categories != null && categories.isNotEmpty) {
-        tasks = tasks
-            .where((task) =>
-                task.category != null && categories.contains(task.category))
-            .toList();
-      }
+        // Category filter
+        if (hasCategories &&
+            (task.category == null || !categories.contains(task.category))) {
+          return false;
+        }
 
-      // Filter by priorities
-      if (priorities != null && priorities.isNotEmpty) {
-        tasks =
-            tasks.where((task) => priorities.contains(task.priority)).toList();
-      }
+        // Priority filter
+        if (hasPriorities && !priorities.contains(task.priority)) {
+          return false;
+        }
 
-      // Filter by statuses
-      if (statuses != null && statuses.isNotEmpty) {
-        tasks = tasks.where((task) => statuses.contains(task.status)).toList();
-      }
+        // Status filter
+        if (hasStatuses && !statuses.contains(task.status)) {
+          return false;
+        }
 
-      return tasks;
+        return true;
+      }).toList();
     } catch (e) {
       _logger.error('Error searching tasks', tag: 'StorageService', error: e);
-      return []; // Return empty list as safe fallback
+      return [];
     }
   }
 
@@ -368,7 +400,7 @@ class StorageService extends GetxService {
   Future<void> clearAll() async {
     try {
       await _box.erase();
-      _invalidateCache();
+      _invalidateAllCaches();
       _logger.info('All data cleared', tag: 'StorageService');
     } catch (e) {
       _logger.error('Error clearing all data', tag: 'StorageService', error: e);
@@ -378,13 +410,24 @@ class StorageService extends GetxService {
 
   // Focus Sessions
   List<FocusSession> getFocusSessions() {
+    // Check cache validity
+    if (_isCacheValid(_sessionsCache, _sessionsCacheTimestamp)) {
+      return List.from(_sessionsCache!);
+    }
+
     try {
       final sessionsJson = _box.read<List>(AppConstants.focusSessionsKey) ?? [];
-      return sessionsJson.map((json) => FocusSession.fromJson(json)).toList();
+      _sessionsCache = sessionsJson
+          .map((json) => FocusSession.fromJson(json as Map<String, dynamic>))
+          .toList();
+      _sessionsCacheTimestamp = DateTime.now();
+      return List.from(_sessionsCache!);
     } catch (e) {
       _logger.error('Error loading focus sessions',
           tag: 'StorageService', error: e);
-      return []; // Return empty list as safe fallback
+      _sessionsCache = [];
+      _sessionsCacheTimestamp = DateTime.now();
+      return [];
     }
   }
 
@@ -394,6 +437,7 @@ class StorageService extends GetxService {
         AppConstants.focusSessionsKey,
         sessions.map((s) => s.toJson()).toList(),
       );
+      _invalidateSessionsCache();
     } catch (e) {
       _logger.error('Error saving focus sessions',
           tag: 'StorageService', error: e);
@@ -533,23 +577,12 @@ class StorageService extends GetxService {
       final tasks = getTasks();
       final sessions = getFocusSessions();
 
-      final todayTasks = tasks
-          .where((t) =>
-              t.date.year == today.year &&
-              t.date.month == today.month &&
-              t.date.day == today.day)
-          .toList();
-
+      final todayTasks = tasks.where((t) => _isSameDay(t.date, today)).toList();
       final todayCompletedTasks =
           todayTasks.where((t) => t.status == TaskStatus.done).length;
 
-      final todaySessions = sessions
-          .where((s) =>
-              s.startTime.year == today.year &&
-              s.startTime.month == today.month &&
-              s.startTime.day == today.day)
-          .toList();
-
+      final todaySessions =
+          sessions.where((s) => _isSameDay(s.startTime, today)).toList();
       final todayFocusMinutes = todaySessions.fold(
           0, (sum, session) => sum + session.durationMinutes);
 
@@ -562,31 +595,42 @@ class StorageService extends GetxService {
     } catch (e) {
       _logger.error('Error getting today stats',
           tag: 'StorageService', error: e);
-      // Return safe fallback with zero values
-      return {
-        'totalTasks': 0,
-        'completedTasks': 0,
-        'focusMinutes': 0,
-        'focusSessions': 0,
-      };
+      return _getEmptyStatsMap();
     }
+  }
+
+  /// Check if two dates are the same day
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  /// Get empty stats map for error fallback
+  Map<String, dynamic> _getEmptyStatsMap() {
+    return {
+      'totalTasks': 0,
+      'completedTasks': 0,
+      'focusMinutes': 0,
+      'focusSessions': 0,
+    };
   }
 
   // Behavior Logs
   List<Map<String, dynamic>> getBehaviorLogs() {
     try {
-      final logs = _box.read<List>('behaviorLogs') ?? [];
+      final logs = _box.read<List>(_behaviorLogsKey) ?? [];
       return logs.map((log) => Map<String, dynamic>.from(log)).toList();
     } catch (e) {
       _logger.error('Error loading behavior logs',
           tag: 'StorageService', error: e);
-      return []; // Return empty list as safe fallback
+      return [];
     }
   }
 
   Future<void> saveBehaviorLogs(List<Map<String, dynamic>> logs) async {
     try {
-      await _box.write('behaviorLogs', logs);
+      await _box.write(_behaviorLogsKey, logs);
     } catch (e) {
       _logger.error('Error saving behavior logs',
           tag: 'StorageService', error: e);
@@ -610,6 +654,283 @@ class StorageService extends GetxService {
     } catch (e) {
       _logger.error('Error writing key: $key', tag: 'StorageService', error: e);
       // Don't throw for generic writes
+    }
+  }
+  // Batch Operations for better performance
+
+  /// Add multiple tasks at once (more efficient than individual adds)
+  Future<void> addTasksBatch(List<Task> newTasks) async {
+    if (newTasks.isEmpty) return;
+
+    try {
+      final tasks = getTasks();
+      tasks.addAll(newTasks);
+      await saveTasks(tasks);
+      _logger.info('Batch added ${newTasks.length} tasks',
+          tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error batch adding tasks',
+          tag: 'StorageService', error: e);
+      rethrow;
+    }
+  }
+
+  /// Update multiple tasks at once
+  Future<void> updateTasksBatch(List<Task> updatedTasks) async {
+    if (updatedTasks.isEmpty) return;
+
+    try {
+      final tasks = getTasks();
+      final taskMap = {for (var t in tasks) t.id: t};
+
+      for (final updatedTask in updatedTasks) {
+        taskMap[updatedTask.id] = updatedTask;
+      }
+
+      await saveTasks(taskMap.values.toList());
+      _logger.info('Batch updated ${updatedTasks.length} tasks',
+          tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error batch updating tasks',
+          tag: 'StorageService', error: e);
+      rethrow;
+    }
+  }
+
+  /// Delete multiple tasks at once
+  Future<void> deleteTasksBatch(List<String> taskIds) async {
+    if (taskIds.isEmpty) return;
+
+    try {
+      final tasks = getTasks();
+      final idsToDelete = taskIds.toSet();
+      final filteredTasks =
+          tasks.where((t) => !idsToDelete.contains(t.id)).toList();
+
+      await saveTasks(filteredTasks);
+      _logger.info('Batch deleted ${taskIds.length} tasks',
+          tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error batch deleting tasks',
+          tag: 'StorageService', error: e);
+      rethrow;
+    }
+  }
+
+  /// Execute multiple storage operations in a transaction-like manner
+  Future<void> executeInTransaction(Future<void> Function() operation) async {
+    // Create backup of critical data
+    final tasksBackup = _box.read<List>(AppConstants.tasksKey);
+    final sessionsBackup = _box.read<List>(AppConstants.focusSessionsKey);
+
+    try {
+      await operation();
+    } catch (e) {
+      // Restore from backup on failure
+      _logger.error('Transaction failed, restoring backup',
+          tag: 'StorageService', error: e);
+
+      if (tasksBackup != null) {
+        await _box.write(AppConstants.tasksKey, tasksBackup);
+      }
+      if (sessionsBackup != null) {
+        await _box.write(AppConstants.focusSessionsKey, sessionsBackup);
+      }
+
+      _invalidateAllCaches();
+      rethrow;
+    }
+  }
+
+  // ==================== NOTES ====================
+  List<Note> getNotes() {
+    try {
+      final notesJson = _box.read<List>(AppConstants.notesKey) ?? [];
+      return notesJson
+          .map((json) => Note.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Error loading notes', tag: 'StorageService', error: e);
+      return [];
+    }
+  }
+
+  Future<void> saveNotes(List<Note> notes) async {
+    try {
+      await _box.write(
+        AppConstants.notesKey,
+        notes.map((n) => n.toJson()).toList(),
+      );
+    } catch (e) {
+      _logger.error('Error saving notes', tag: 'StorageService', error: e);
+      throw Exception('Failed to save notes: $e');
+    }
+  }
+
+  Future<void> addNote(Note note) async {
+    try {
+      final notes = getNotes();
+      notes.add(note);
+      await saveNotes(notes);
+      _logger.info('Note added: ${note.id}', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error adding note', tag: 'StorageService', error: e);
+      throw Exception('Failed to add note: $e');
+    }
+  }
+
+  Future<void> updateNote(Note note) async {
+    try {
+      final notes = getNotes();
+      final index = notes.indexWhere((n) => n.id == note.id);
+      if (index != -1) {
+        notes[index] = note;
+        await saveNotes(notes);
+        _logger.info('Note updated: ${note.id}', tag: 'StorageService');
+      }
+    } catch (e) {
+      _logger.error('Error updating note', tag: 'StorageService', error: e);
+      throw Exception('Failed to update note: $e');
+    }
+  }
+
+  Future<void> deleteNote(String noteId) async {
+    try {
+      final notes = getNotes();
+      notes.removeWhere((n) => n.id == noteId);
+      await saveNotes(notes);
+      _logger.info('Note deleted: $noteId', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error deleting note', tag: 'StorageService', error: e);
+      throw Exception('Failed to delete note: $e');
+    }
+  }
+
+  // ==================== DIARIES ====================
+  List<Diary> getDiaries() {
+    try {
+      final diariesJson = _box.read<List>(AppConstants.diariesKey) ?? [];
+      return diariesJson
+          .map((json) => Diary.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Error loading diaries', tag: 'StorageService', error: e);
+      return [];
+    }
+  }
+
+  Future<void> saveDiaries(List<Diary> diaries) async {
+    try {
+      await _box.write(
+        AppConstants.diariesKey,
+        diaries.map((d) => d.toJson()).toList(),
+      );
+    } catch (e) {
+      _logger.error('Error saving diaries', tag: 'StorageService', error: e);
+      throw Exception('Failed to save diaries: $e');
+    }
+  }
+
+  Future<void> addDiary(Diary diary) async {
+    try {
+      final diaries = getDiaries();
+      diaries.add(diary);
+      await saveDiaries(diaries);
+      _logger.info('Diary added: ${diary.id}', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error adding diary', tag: 'StorageService', error: e);
+      throw Exception('Failed to add diary: $e');
+    }
+  }
+
+  Future<void> updateDiary(Diary diary) async {
+    try {
+      final diaries = getDiaries();
+      final index = diaries.indexWhere((d) => d.id == diary.id);
+      if (index != -1) {
+        diaries[index] = diary;
+        await saveDiaries(diaries);
+        _logger.info('Diary updated: ${diary.id}', tag: 'StorageService');
+      }
+    } catch (e) {
+      _logger.error('Error updating diary', tag: 'StorageService', error: e);
+      throw Exception('Failed to update diary: $e');
+    }
+  }
+
+  Future<void> deleteDiary(String diaryId) async {
+    try {
+      final diaries = getDiaries();
+      diaries.removeWhere((d) => d.id == diaryId);
+      await saveDiaries(diaries);
+      _logger.info('Diary deleted: $diaryId', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error deleting diary', tag: 'StorageService', error: e);
+      throw Exception('Failed to delete diary: $e');
+    }
+  }
+
+  // ==================== EVENTS ====================
+  List<Event> getEvents() {
+    try {
+      final eventsJson = _box.read<List>(AppConstants.eventsKey) ?? [];
+      return eventsJson
+          .map((json) => Event.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Error loading events', tag: 'StorageService', error: e);
+      return [];
+    }
+  }
+
+  Future<void> saveEvents(List<Event> events) async {
+    try {
+      await _box.write(
+        AppConstants.eventsKey,
+        events.map((e) => e.toJson()).toList(),
+      );
+    } catch (e) {
+      _logger.error('Error saving events', tag: 'StorageService', error: e);
+      throw Exception('Failed to save events: $e');
+    }
+  }
+
+  Future<void> addEvent(Event event) async {
+    try {
+      final events = getEvents();
+      events.add(event);
+      await saveEvents(events);
+      _logger.info('Event added: ${event.id}', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error adding event', tag: 'StorageService', error: e);
+      throw Exception('Failed to add event: $e');
+    }
+  }
+
+  Future<void> updateEvent(Event event) async {
+    try {
+      final events = getEvents();
+      final index = events.indexWhere((e) => e.id == event.id);
+      if (index != -1) {
+        events[index] = event;
+        await saveEvents(events);
+        _logger.info('Event updated: ${event.id}', tag: 'StorageService');
+      }
+    } catch (e) {
+      _logger.error('Error updating event', tag: 'StorageService', error: e);
+      throw Exception('Failed to update event: $e');
+    }
+  }
+
+  Future<void> deleteEvent(String eventId) async {
+    try {
+      final events = getEvents();
+      events.removeWhere((e) => e.id == eventId);
+      await saveEvents(events);
+      _logger.info('Event deleted: $eventId', tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error deleting event', tag: 'StorageService', error: e);
+      throw Exception('Failed to delete event: $e');
     }
   }
 }
