@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../controllers/calendar_controller.dart';
 import '../../../core/models/task.dart';
+import '../../../core/models/event.dart';
 import '../../../core/repositories/task_repository.dart';
 import '../../../routes/app_routes.dart';
 import '../../quick_add/views/quick_add_bottom_sheet.dart';
@@ -55,7 +56,7 @@ class CalendarView extends GetView<CalendarController> {
                   markerSize: 7,
                   markersMaxCount: 3,
                 ),
-                eventLoader: controller.getTasksForDay,
+                eventLoader: controller.getAllItemsForDay,
                 calendarBuilders: CalendarBuilders(
                   markerBuilder: (context, date, events) {
                     if (events.isNotEmpty) {
@@ -94,7 +95,10 @@ class CalendarView extends GetView<CalendarController> {
   Widget _buildTasksList() {
     return Obx(() {
       final tasks = controller.getTasksForDay(controller.selectedDay.value);
-      if (tasks.isEmpty) {
+      final events = controller.getEventsForDay(controller.selectedDay.value);
+      final allItems = [...tasks, ...events];
+
+      if (allItems.isEmpty) {
         return Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -113,9 +117,17 @@ class CalendarView extends GetView<CalendarController> {
 
       return ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: tasks.length,
+        itemCount: allItems.length,
         itemBuilder: (context, index) {
-          final task = tasks[index];
+          final item = allItems[index];
+
+          // Nếu là Event, hiển thị dạng Event
+          if (item is Event) {
+            return _buildEventCard(item);
+          }
+
+          // Nếu là Task, hiển thị dạng Task
+          final task = item as Task;
           final isOverdue = task.isOverdue;
           final cardColor = isOverdue ? Colors.red.shade50 : null;
           final borderColor = isOverdue ? Colors.red : null;
@@ -213,6 +225,89 @@ class CalendarView extends GetView<CalendarController> {
         },
       );
     });
+  }
+
+  Widget _buildEventCard(Event event) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        border: Border.all(color: Colors.purple.shade300, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 1,
+        color: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ListTile(
+          leading: Icon(
+            Icons.event,
+            color: Colors.purple.shade600,
+          ),
+          title: Text(
+            event.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (event.time != null)
+                Row(
+                  children: [
+                    Icon(Icons.access_time,
+                        size: 14, color: Colors.grey.shade600),
+                    const SizedBox(width: 4),
+                    Text(
+                      DateFormat('HH:mm').format(event.time!),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              if (event.description != null && event.description!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    event.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                ),
+              if (event.isRecurring)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.repeat,
+                          size: 14, color: Colors.purple.shade600),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Recurring',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.purple.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          trailing: event.hasNotification
+              ? Icon(Icons.notifications_active,
+                  size: 20, color: Colors.purple.shade600)
+              : null,
+          onTap: () {
+            // TODO: Navigate to event detail
+            Get.snackbar('Event', event.title);
+          },
+        ),
+      ),
+    );
   }
 
   Color _getPriorityColor(Priority priority) {

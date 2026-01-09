@@ -7,6 +7,8 @@ import '../../../core/models/attachment.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/attachment_service.dart';
+import '../../calendar/controllers/calendar_controller.dart';
+import '../../manage/controllers/manage_controller.dart';
 
 class AddItemController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
@@ -77,8 +79,18 @@ class AddItemController extends GetxController {
     );
 
     await _storage.addNote(note);
+
+    // Refresh ManageController nếu đang mở
+    try {
+      if (Get.isRegistered<ManageController>()) {
+        Get.find<ManageController>().loadData();
+      }
+    } catch (e) {
+      // Ignore if ManageController is not registered
+    }
+
     Get.back();
-    Get.snackbar('success'.tr, 'note_saved'.tr);
+    _clearForm();
   }
 
   Future<void> saveDiary() async {
@@ -110,9 +122,18 @@ class AddItemController extends GetxController {
     );
 
     await _storage.addDiary(diary);
+
+    // Refresh ManageController nếu đang mở
+    try {
+      if (Get.isRegistered<ManageController>()) {
+        Get.find<ManageController>().loadData();
+      }
+    } catch (e) {
+      // Ignore if ManageController is not registered
+    }
+
     Get.back();
     _clearForm();
-    Get.snackbar('success'.tr, 'diary_saved'.tr);
   }
 
   Future<void> saveEvent() async {
@@ -132,13 +153,20 @@ class AddItemController extends GetxController {
       );
     }
 
+    // Đảm bảo date chỉ lưu ngày, không có giờ phút giây
+    final eventDate = DateTime(
+      selectedDate.value.year,
+      selectedDate.value.month,
+      selectedDate.value.day,
+    );
+
     final event = Event(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: titleController.text.trim(),
       description: descriptionController.text.trim().isEmpty
           ? null
           : descriptionController.text.trim(),
-      date: selectedDate.value,
+      date: eventDate,
       time: eventTime,
       hasNotification: hasNotification.value,
       reminderMinutesBefore:
@@ -149,9 +177,18 @@ class AddItemController extends GetxController {
     );
 
     await _storage.addEvent(event);
+
+    // Refresh calendar nếu đang mở
+    try {
+      if (Get.isRegistered<CalendarController>()) {
+        Get.find<CalendarController>().refresh();
+      }
+    } catch (e) {
+      // Ignore if CalendarController is not registered
+    }
+
     Get.back();
     _clearForm();
-    Get.snackbar('success'.tr, 'event_saved'.tr);
   }
 
   void _clearForm() {

@@ -42,59 +42,145 @@ class ManageView extends GetView<ManageController> {
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Get.isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                color: Get.isDarkMode ? Colors.grey[850] : Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: TabBar(
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.blue.shade400,
-                      Colors.blue.shade600,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor:
-                    Get.isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                labelStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.note_outlined, size: 20),
-                        const SizedBox(width: 8),
-                        Text('notes_tab'.tr),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.book_outlined, size: 20),
-                        const SizedBox(width: 8),
-                        Text('diary_tab'.tr),
-                      ],
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.all(4),
+              child: Builder(
+                builder: (context) {
+                  final tabController = DefaultTabController.of(context);
+                  return AnimatedBuilder(
+                    animation: tabController,
+                    builder: (context, child) {
+                      final tabIndex = tabController.index;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => tabController.animateTo(0),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: tabIndex == 0
+                                      ? LinearGradient(
+                                          colors: [
+                                            Colors.blue.shade400,
+                                            Colors.blue.shade600,
+                                          ],
+                                        )
+                                      : null,
+                                  color:
+                                      tabIndex == 0 ? null : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: tabIndex == 0
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.blue
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.note_outlined,
+                                      size: 20,
+                                      color: tabIndex == 0
+                                          ? Colors.white
+                                          : Get.isDarkMode
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'notes_tab'.tr,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: tabIndex == 0
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        color: tabIndex == 0
+                                            ? Colors.white
+                                            : Get.isDarkMode
+                                                ? Colors.grey[400]
+                                                : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => tabController.animateTo(1),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: tabIndex == 1
+                                      ? LinearGradient(
+                                          colors: [
+                                            Colors.green.shade400,
+                                            Colors.green.shade600,
+                                          ],
+                                        )
+                                      : null,
+                                  color:
+                                      tabIndex == 1 ? null : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: tabIndex == 1
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.green
+                                                .withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.book_outlined,
+                                      size: 20,
+                                      color: tabIndex == 1
+                                          ? Colors.white
+                                          : Get.isDarkMode
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'diary_tab'.tr,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: tabIndex == 1
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        color: tabIndex == 1
+                                            ? Colors.white
+                                            : Get.isDarkMode
+                                                ? Colors.grey[400]
+                                                : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
@@ -230,6 +316,7 @@ class ManageView extends GetView<ManageController> {
                   ),
                   child: ListTile(
                     dense: true,
+                    onTap: () {}, // Tắt popup khi click
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 4,
@@ -310,7 +397,7 @@ class ManageView extends GetView<ManageController> {
   Widget _buildDiaryTab() {
     return Column(
       children: [
-        // Horizontal scrollable month selector - 6 months centered
+        // Horizontal scrollable month selector - 5 tháng cố định
         Container(
           height: 100,
           decoration: BoxDecoration(
@@ -331,7 +418,7 @@ class ManageView extends GetView<ManageController> {
           ),
           child: Obx(() {
             final currentMonth = controller.selectedMonth.value;
-            // Generate 5 months: current month centered (2 before, 2 after)
+            // Generate 5 tháng: 2 trước, tháng hiện tại, 2 sau
             final months = List.generate(5, (index) {
               return DateTime(
                 currentMonth.year,
@@ -459,131 +546,134 @@ class ManageView extends GetView<ManageController> {
               itemCount: diaries.length,
               itemBuilder: (context, index) {
                 final diary = diaries[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Get.isDarkMode ? Colors.grey[850]! : Colors.white,
-                        Get.isDarkMode
-                            ? Colors.grey[900]!
-                            : Colors.green.withValues(alpha: 0.03),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Get.isDarkMode
-                            ? Colors.black.withValues(alpha: 0.2)
-                            : Colors.green.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                return GestureDetector(
+                  onTap: () {}, // Tắt popup khi click
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Get.isDarkMode ? Colors.grey[850]! : Colors.white,
+                          Get.isDarkMode
+                              ? Colors.grey[900]!
+                              : Colors.green.withValues(alpha: 0.03),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Date badge
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.green.shade400,
-                                Colors.green.shade600,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Get.isDarkMode
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.green.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Date badge
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.green.shade400,
+                                  Colors.green.shade600,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${diary.date.day}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  DateFormat('MMM').format(diary.date),
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Column(
-                            children: [
-                              Text(
-                                '${diary.date.day}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                DateFormat('MMM').format(diary.date),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Content
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                diary.title,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: Get.isDarkMode
-                                      ? Colors.white
-                                      : Colors.grey[900],
-                                ),
-                              ),
-                              if (diary.content.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                          const SizedBox(width: 12),
+                          // Content
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  diary.content,
+                                  diary.title,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
                                     color: Get.isDarkMode
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
+                                        ? Colors.white
+                                        : Colors.grey[900],
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                              if (diary.showTime) ...[
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.access_time,
-                                      size: 12,
-                                      color: Colors.green.shade600,
+                                if (diary.content.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    diary.content,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Get.isDarkMode
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600],
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      DateFormat('HH:mm').format(diary.date),
-                                      style: TextStyle(
-                                        fontSize: 12,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                if (diary.showTime) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 12,
                                         color: Colors.green.shade600,
-                                        fontWeight: FontWeight.w500,
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        DateFormat('HH:mm').format(diary.date),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.green.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                        // Delete button
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          color: Colors.red.shade400,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => controller.deleteDiary(diary.id),
-                        ),
-                      ],
+                          // Delete button
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            color: Colors.red.shade400,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => controller.deleteDiary(diary.id),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
