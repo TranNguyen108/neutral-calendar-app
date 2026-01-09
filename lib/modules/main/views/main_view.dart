@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../controllers/main_controller.dart';
 import '../../today/views/today_view.dart';
 import '../../calendar/views/calendar_view.dart';
-import '../../projects/views/projects_view.dart';
 import '../../manage/views/manage_view.dart';
 import '../../profile/views/profile_view.dart';
 
@@ -15,7 +14,6 @@ class MainView extends GetView<MainController> {
     final List<Widget> pages = [
       const TodayView(),
       const CalendarView(),
-      const ProjectsView(),
       const ManageView(),
       const ProfileView(),
     ];
@@ -36,10 +34,6 @@ class MainView extends GetView<MainController> {
               BottomNavigationBarItem(
                 icon: const Icon(Icons.calendar_month),
                 label: 'nav_calendar'.tr,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.folder_outlined),
-                label: 'nav_projects'.tr,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.list_alt),

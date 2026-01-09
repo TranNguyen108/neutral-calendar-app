@@ -30,6 +30,7 @@ class CalendarView extends GetView<CalendarController> {
       body: Obx(() => Column(
             children: [
               TableCalendar(
+                key: ValueKey(controller.tasks.length),
                 firstDay: DateTime.utc(2020, 1, 1),
                 lastDay: DateTime.utc(2030, 12, 31),
                 focusedDay: controller.focusedDay.value,
@@ -47,12 +48,32 @@ class CalendarView extends GetView<CalendarController> {
                     color: Colors.blue,
                     shape: BoxShape.circle,
                   ),
-                  markerDecoration: const BoxDecoration(
-                    color: Colors.red,
+                  markerDecoration: BoxDecoration(
+                    color: Colors.red.shade400,
                     shape: BoxShape.circle,
                   ),
+                  markerSize: 7,
+                  markersMaxCount: 3,
                 ),
                 eventLoader: controller.getTasksForDay,
+                calendarBuilders: CalendarBuilders(
+                  markerBuilder: (context, date, events) {
+                    if (events.isNotEmpty) {
+                      return Positioned(
+                        bottom: 1,
+                        child: Container(
+                          width: 16,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade400,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      );
+                    }
+                    return null;
+                  },
+                ),
               ),
               const Divider(),
               Expanded(
@@ -61,7 +82,10 @@ class CalendarView extends GetView<CalendarController> {
             ],
           )),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => QuickAddBottomSheet.show(),
+        onPressed: () => Get.bottomSheet(
+          const QuickAddBottomSheet(),
+          isScrollControlled: true,
+        ),
         child: const Icon(Icons.add),
       ),
     );

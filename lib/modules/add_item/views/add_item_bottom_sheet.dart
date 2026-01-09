@@ -36,7 +36,10 @@ class AddItemBottomSheet {
                   color: Colors.blue,
                   onTap: () {
                     Get.back();
-                    QuickAddBottomSheet.show();
+                    Get.bottomSheet(
+                      const QuickAddBottomSheet(),
+                      isScrollControlled: true,
+                    );
                   },
                 ),
                 _buildTypeButton(

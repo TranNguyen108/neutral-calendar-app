@@ -73,6 +73,38 @@ class ManageController extends GetxController {
     );
   }
 
+  void setMonth(DateTime month) {
+    selectedMonth.value = month;
+  }
+
+  Future<void> addNote(String title, String content, String category) async {
+    final now = DateTime.now();
+    final note = Note(
+      id: now.millisecondsSinceEpoch.toString(),
+      title: title,
+      content: content,
+      category: category,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _storage.addNote(note);
+    loadData();
+  }
+
+  Future<void> addDiary(String title, String content) async {
+    final now = DateTime.now();
+    final diary = Diary(
+      id: now.millisecondsSinceEpoch.toString(),
+      title: title,
+      content: content,
+      date: selectedMonth.value,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _storage.addDiary(diary);
+    loadData();
+  }
+
   Future<void> deleteNote(String noteId) async {
     await _storage.deleteNote(noteId);
     loadData();

@@ -278,7 +278,10 @@ class TodayView extends GetView<TodayController> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => QuickAddBottomSheet.show(),
+        onPressed: () => Get.bottomSheet(
+          const QuickAddBottomSheet(),
+          isScrollControlled: true,
+        ),
         tooltip: 'quick_add'.tr,
         child: const Icon(Icons.add),
       ),

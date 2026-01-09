@@ -150,7 +150,10 @@ class ProjectDetailView extends GetView<ProjectDetailController> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Open quick add with this project pre-selected
-          QuickAddBottomSheet.show();
+          Get.bottomSheet(
+            const QuickAddBottomSheet(),
+            isScrollControlled: true,
+          );
         },
         child: const Icon(Icons.add),
       ),
