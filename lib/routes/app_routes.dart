@@ -10,4 +10,5 @@ class AppRoutes {
   static const search = '/search';
   static const projects = '/projects';
   static const projectDetail = '/project/:projectId';
+  static const aiChat = '/ai-chat';
 }

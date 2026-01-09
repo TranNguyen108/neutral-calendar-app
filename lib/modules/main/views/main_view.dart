@@ -4,6 +4,7 @@ import '../controllers/main_controller.dart';
 import '../../today/views/today_view.dart';
 import '../../calendar/views/calendar_view.dart';
 import '../../manage/views/manage_view.dart';
+import '../../ai_chat/views/ai_chat_view.dart';
 import '../../profile/views/profile_view.dart';
 
 class MainView extends GetView<MainController> {
@@ -15,6 +16,7 @@ class MainView extends GetView<MainController> {
       const TodayView(),
       const CalendarView(),
       const ManageView(),
+      const AIChatView(),
       const ProfileView(),
     ];
 
@@ -38,6 +40,10 @@ class MainView extends GetView<MainController> {
               BottomNavigationBarItem(
                 icon: const Icon(Icons.list_alt),
                 label: 'nav_manage'.tr,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.smart_toy),
+                label: 'AI Chat',
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.person),
