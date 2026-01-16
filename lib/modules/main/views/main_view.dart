@@ -41,8 +41,8 @@ class MainView extends GetView<MainController> {
                 icon: const Icon(Icons.list_alt),
                 label: 'nav_manage'.tr,
               ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.smart_toy),
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.smart_toy),
                 label: 'AI Chat',
               ),
               BottomNavigationBarItem(

@@ -172,7 +172,7 @@ class QuickAddBottomSheet extends StatelessWidget {
                       fontWeight: FontWeight.w600, fontSize: 15)),
               const SizedBox(height: 12),
               Obx(() => DropdownButtonFormField<String>(
-                    value: controller.selectedCategory.value,
+                    initialValue: controller.selectedCategory.value,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.category),
@@ -392,7 +392,7 @@ class QuickAddBottomSheet extends StatelessWidget {
       label: Center(child: Text(label, style: const TextStyle(fontSize: 13))),
       selected: isSelected,
       onSelected: (_) => controller.selectedPriority.value = priority,
-      selectedColor: color.withOpacity(0.2),
+      selectedColor: color.withValues(alpha: 0.2),
       checkmarkColor: color,
       side: BorderSide(
           color: isSelected ? color : Colors.grey.shade300, width: 1.5),
@@ -416,22 +416,37 @@ class QuickAddBottomSheet extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: reminderOptions.map((minutes) {
-            final isSelected = controller.selectedReminder.value == minutes;
-            return RadioListTile<int?>(
-              title: Text(minutes == null
-                  ? 'none'.tr
-                  : minutes < 60
-                      ? '$minutes ${'minutes_before'.tr}'
-                      : minutes == 60
-                          ? '1 ${'hour_before'.tr}'
-                          : '1 ${'day_before'.tr}'),
-              value: minutes,
-              groupValue: controller.selectedReminder.value,
-              onChanged: (value) {
-                controller.selectedReminder.value = value;
+            return InkWell(
+              onTap: () {
+                controller.selectedReminder.value = minutes;
                 Get.back();
               },
-              selected: isSelected,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      controller.selectedReminder.value == minutes
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        minutes == null
+                            ? 'none'.tr
+                            : minutes < 60
+                                ? '$minutes ${'minutes_before'.tr}'
+                                : minutes == 60
+                                    ? '1 ${'hour_before'.tr}'
+                                    : '1 ${'day_before'.tr}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           }).toList(),
         ),
@@ -454,16 +469,29 @@ class QuickAddBottomSheet extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: recurrenceOptions.map((rule) {
-            final isSelected = controller.selectedRecurrence.value == rule;
-            return RadioListTile<RecurrenceRule>(
-              title: Text(_getRecurrenceText(rule)),
-              value: rule,
-              groupValue: controller.selectedRecurrence.value,
-              onChanged: (value) {
-                controller.selectedRecurrence.value = value!;
+            return InkWell(
+              onTap: () {
+                controller.selectedRecurrence.value = rule;
                 Get.back();
               },
-              selected: isSelected,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      controller.selectedRecurrence.value == rule
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(_getRecurrenceText(rule)),
+                    ),
+                  ],
+                ),
+              ),
             );
           }).toList(),
         ),

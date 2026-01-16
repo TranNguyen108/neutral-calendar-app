@@ -24,9 +24,8 @@ class GroqClient {
     }
 
     try {
-      final url = 'https://api.groq.com/openai/v1/chat/completions';
+      const url = 'https://api.groq.com/openai/v1/chat/completions';
 
-      print('Calling Groq API: $url');
       _lastRequestTime = DateTime.now();
 
       final response = await http
@@ -54,8 +53,6 @@ class GroqClient {
       if (response.statusCode == 429) {
         if (retryCount < 3) {
           final retryDelay = Duration(seconds: (retryCount + 1) * 2);
-          print(
-              'Rate limited (429). Retrying in ${retryDelay.inSeconds}s... (attempt ${retryCount + 1}/3)');
           await Future.delayed(retryDelay);
           return generate(prompt, retryCount: retryCount + 1);
         } else {
@@ -78,8 +75,6 @@ class GroqClient {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
 
-      print('Raw Groq Response: ${response.body}');
-
       final jsonResponse = jsonDecode(response.body);
 
       if (jsonResponse['choices'] == null || jsonResponse['choices'].isEmpty) {
@@ -87,8 +82,6 @@ class GroqClient {
       }
 
       final text = jsonResponse['choices'][0]['message']['content'];
-
-      print('Extracted text: $text');
 
       if (text == null || text.isEmpty) {
         throw Exception('Empty response from AI');

@@ -4,11 +4,16 @@ import '../models/chat_message.dart';
 import '../../../core/ai/ai_service.dart';
 import '../../../core/ai/ai_models.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/content_service.dart';
 import '../../../core/models/task.dart';
+import '../../../core/models/event.dart';
+import '../../../core/models/note.dart';
+import '../../../core/models/diary.dart';
 
 class AIChatController extends GetxController {
   final AIService _aiService = Get.find<AIService>();
   final StorageService _storage = Get.find<StorageService>();
+  late final ContentService _content;
 
   final messages = <ChatMessage>[].obs;
   final isTyping = false.obs;
@@ -20,6 +25,7 @@ class AIChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _content = Get.find<ContentService>();
     _loadChatHistory();
     _addWelcomeMessage();
   }
@@ -175,6 +181,18 @@ class AIChatController extends GetxController {
       case AIActionType.createEvent:
         await _createEventFromAction(action);
         break;
+      case AIActionType.createNote:
+        await _createNoteFromAction(action);
+        break;
+      case AIActionType.createHabit:
+        await _createHabitFromAction(action);
+        break;
+      case AIActionType.updateTask:
+        await _updateTaskFromAction(action);
+        break;
+      case AIActionType.deleteTask:
+        await _deleteTaskFromAction(action);
+        break;
       case AIActionType.askConfirmation:
         messages.add(ChatMessage.ai(action.message ?? 'Cần xác nhận'));
         break;
@@ -228,11 +246,240 @@ class AIChatController extends GetxController {
   }
 
   Future<void> _createEventFromAction(AIAction action) async {
-    // TODO: Implement event creation
-    messages.add(ChatMessage.ai(
-      action.message ?? '🎉 Tính năng event đang phát triển',
-      type: MessageType.taskCreated,
-    ));
+    try {
+      final data = action.data;
+      final title = data['title'] as String;
+      final startDateStr = data['startDateTime'] as String?;
+      final endDateStr = data['endDateTime'] as String?;
+      final location = data['location'] as String?;
+      final description = data['description'] as String?;
+
+      DateTime startDate = DateTime.now();
+      if (startDateStr != null) {
+        startDate = DateTime.parse(startDateStr);
+      }
+
+      DateTime endDate = startDate;
+      if (endDateStr != null) {
+        endDate = DateTime.parse(endDateStr);
+      }
+
+      final event = Event(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        description: description,
+        date: startDate,
+        time: startDate,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _content.saveEvent(event);
+
+      messages.add(ChatMessage.ai(
+        action.message ??
+            '🎉 Đã tạo sự kiện: "$title"\n'
+                '📅 ${_formatDate(startDate)}'
+                '${location != null ? "\n📍 $location" : ""}',
+        type: MessageType.taskCreated,
+        metadata: {'eventId': event.id},
+      ));
+    } catch (e) {
+      messages
+          .add(ChatMessage.ai('❌ Lỗi tạo event: $e', type: MessageType.error));
+    }
+  }
+
+  /// Create note from AI action
+  Future<void> _createNoteFromAction(AIAction action) async {
+    try {
+      final data = action.data;
+      final title = data['title'] as String;
+      final content = data['content'] as String? ?? '';
+      final category = data['category'] as String?;
+
+      final note = Note(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title,
+        content: content,
+        category: category,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _content.saveNote(note);
+
+      messages.add(ChatMessage.ai(
+        action.message ??
+            '📝 Đã tạo ghi chú: "$title"'
+                '${category != null ? "\n📂 $category" : ""}',
+        type: MessageType.taskCreated,
+        metadata: {'noteId': note.id},
+      ));
+    } catch (e) {
+      messages
+          .add(ChatMessage.ai('❌ Lỗi tạo note: $e', type: MessageType.error));
+    }
+  }
+
+  /// Create habit/diary from AI action
+  Future<void> _createHabitFromAction(AIAction action) async {
+    try {
+      final data = action.data;
+      final content = data['content'] as String;
+      final date = data['date'] != null
+          ? DateTime.parse(data['date'] as String)
+          : DateTime.now();
+      final mood = data['mood'] as String?;
+
+      final diary = Diary(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        date: date,
+        content: content,
+        mood: mood,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await _content.saveDiary(diary);
+
+      messages.add(ChatMessage.ai(
+        action.message ??
+            '📔 Đã tạo nhật ký cho ${_formatDate(date)}'
+                '${mood != null ? "\n😊 Tâm trạng: $mood" : ""}',
+        type: MessageType.taskCreated,
+        metadata: {'diaryId': diary.id},
+      ));
+    } catch (e) {
+      messages
+          .add(ChatMessage.ai('❌ Lỗi tạo diary: $e', type: MessageType.error));
+    }
+  }
+
+  /// Update task from AI action
+  Future<void> _updateTaskFromAction(AIAction action) async {
+    try {
+      final data = action.data;
+      final taskId = data['taskId'] as String?;
+      final title = data['title'] as String?;
+
+      if (taskId == null) {
+        // Search by title
+        final tasks = _storage.getTasks();
+        final matchedTask = tasks.firstWhereOrNull((t) =>
+            title != null &&
+            t.title.toLowerCase().contains(title.toLowerCase()));
+
+        if (matchedTask == null) {
+          messages.add(ChatMessage.ai(
+            '❓ Không tìm thấy task phù hợp. Vui lòng chính xác hơn.',
+            type: MessageType.error,
+          ));
+          return;
+        }
+
+        await _performTaskUpdate(matchedTask, data);
+      } else {
+        final tasks = _storage.getTasks();
+        final task = tasks.firstWhereOrNull((t) => t.id == taskId);
+
+        if (task == null) {
+          messages.add(ChatMessage.ai(
+            '❌ Không tìm thấy task với ID: $taskId',
+            type: MessageType.error,
+          ));
+          return;
+        }
+
+        await _performTaskUpdate(task, data);
+      }
+    } catch (e) {
+      messages.add(
+          ChatMessage.ai('❌ Lỗi cập nhật task: $e', type: MessageType.error));
+    }
+  }
+
+  Future<void> _performTaskUpdate(Task task, Map<String, dynamic> data) async {
+    final updatedTask = task.copyWith(
+      title: data['title'] as String? ?? task.title,
+      date: data['date'] != null
+          ? DateTime.parse(data['date'] as String)
+          : task.date,
+      startTime: data['startTime'] != null
+          ? DateTime.parse(data['startTime'] as String)
+          : task.startTime,
+      priority: data['priority'] != null
+          ? _parsePriority(data['priority'] as String)
+          : task.priority,
+      status: data['status'] != null
+          ? _parseStatus(data['status'] as String)
+          : task.status,
+      updatedAt: DateTime.now(),
+    );
+
+    final tasks = _storage.getTasks();
+    final index = tasks.indexWhere((t) => t.id == task.id);
+    if (index >= 0) {
+      tasks[index] = updatedTask;
+      await _storage.saveTasks(tasks);
+
+      messages.add(ChatMessage.ai(
+        '✅ Đã cập nhật task: "${updatedTask.title}"',
+        type: MessageType.taskCreated,
+        metadata: {'taskId': updatedTask.id},
+      ));
+    }
+  }
+
+  /// Delete task from AI action
+  Future<void> _deleteTaskFromAction(AIAction action) async {
+    try {
+      final data = action.data;
+      final taskId = data['taskId'] as String?;
+      final title = data['title'] as String?;
+
+      final tasks = _storage.getTasks();
+      Task? taskToDelete;
+
+      if (taskId != null) {
+        taskToDelete = tasks.firstWhereOrNull((t) => t.id == taskId);
+      } else if (title != null) {
+        taskToDelete = tasks.firstWhereOrNull(
+            (t) => t.title.toLowerCase().contains(title.toLowerCase()));
+      }
+
+      if (taskToDelete == null) {
+        messages.add(ChatMessage.ai(
+          '❓ Không tìm thấy task để xóa.',
+          type: MessageType.error,
+        ));
+        return;
+      }
+
+      tasks.removeWhere((t) => t.id == taskToDelete!.id);
+      await _storage.saveTasks(tasks);
+
+      messages.add(ChatMessage.ai(
+        '🗑️ Đã xóa task: "${taskToDelete.title}"',
+        type: MessageType.taskCreated,
+      ));
+    } catch (e) {
+      messages
+          .add(ChatMessage.ai('❌ Lỗi xóa task: $e', type: MessageType.error));
+    }
+  }
+
+  TaskStatus _parseStatus(String status) {
+    final lower = status.toLowerCase();
+    if (lower.contains('done') ||
+        lower.contains('hoàn thành') ||
+        lower.contains('xong')) {
+      return TaskStatus.done;
+    }
+    if (lower.contains('progress') || lower.contains('đang làm')) {
+      return TaskStatus.inProgress;
+    }
+    return TaskStatus.todo;
   }
 
   /// ⚠️ OLD LOGIC - Fallback only
@@ -399,7 +646,7 @@ class AIChatController extends GetxController {
       messages.add(ChatMessage.ai(
         '❌ Lỗi: Tính năng AI đang gặp sự cố.\n\n'
         '💡 Gợi ý: Bạn có thể tạo task thủ công bằng cách vào tab Today hoặc Calendar.\n\n'
-        'Chi tiết: ${e.toString().length > 100 ? e.toString().substring(0, 100) + "..." : e.toString()}',
+        'Chi tiết: ${e.toString().length > 100 ? '${e.toString().substring(0, 100)}...' : e.toString()}',
         type: MessageType.error,
       ));
     }
@@ -409,13 +656,12 @@ class AIChatController extends GetxController {
     // Store subtasks in title if present
     String fullTitle = taskData.title;
     if (taskData.subtasks != null && taskData.subtasks!.isNotEmpty) {
-      fullTitle += '\n' + taskData.subtasks!.map((s) => '• $s').join('\n');
+      fullTitle =
+          '$fullTitle\n${taskData.subtasks!.map((s) => '• $s').join('\n')}';
     }
 
     return Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString() +
-          '_' +
-          date.day.toString(),
+      id: '${DateTime.now().millisecondsSinceEpoch}_${date.day}',
       title: fullTitle,
       date: date,
       startTime:
@@ -626,7 +872,7 @@ class AIChatController extends GetxController {
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(Duration(days: 1));
+    final tomorrow = today.add(const Duration(days: 1));
     final taskDate = DateTime(date.year, date.month, date.day);
 
     if (taskDate == today) return 'Hôm nay';

@@ -60,6 +60,7 @@ class CalendarController extends GetxController {
   }
 
   // Gọi khi thêm/sửa/xóa
+  @override
   void refresh() {
     loadTasks();
     loadEvents();

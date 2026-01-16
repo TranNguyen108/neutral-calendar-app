@@ -19,7 +19,7 @@ class GeminiClient {
       final timeSinceLastRequest = DateTime.now().difference(_lastRequestTime!);
       if (timeSinceLastRequest < _minRequestInterval) {
         final waitTime = _minRequestInterval - timeSinceLastRequest;
-        print('Rate limiting: waiting ${waitTime.inMilliseconds}ms...');
+        // Rate limiting in progress
         await Future.delayed(waitTime);
       }
     }
@@ -28,7 +28,6 @@ class GeminiClient {
       final url =
           'https://generativelanguage.googleapis.com/v1/models/$model:generateContent?key=$apiKey';
 
-      print('Calling Gemini API: $url'); // Debug
       _lastRequestTime = DateTime.now();
 
       final response = await http
@@ -57,8 +56,6 @@ class GeminiClient {
       if (response.statusCode == 429) {
         if (retryCount < 3) {
           final retryDelay = Duration(seconds: (retryCount + 1) * 2);
-          print(
-              'Rate limited (429). Retrying in ${retryDelay.inSeconds}s... (attempt ${retryCount + 1}/3)');
           await Future.delayed(retryDelay);
           return generate(prompt, retryCount: retryCount + 1);
         } else {
@@ -84,8 +81,6 @@ class GeminiClient {
         throw Exception('API Error: ${response.statusCode} - ${response.body}');
       }
 
-      print('Raw API Response: ${response.body}'); // Debug full response
-
       final jsonResponse = jsonDecode(response.body);
 
       if (jsonResponse['candidates'] == null ||
@@ -94,8 +89,6 @@ class GeminiClient {
       }
 
       final text = jsonResponse['candidates'][0]['content']['parts'][0]['text'];
-
-      print('Extracted text: $text'); // Debug extracted text
 
       if (text == null || text.isEmpty) {
         throw Exception('Empty response from AI');
