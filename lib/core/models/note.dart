@@ -4,6 +4,7 @@ class Note {
   final String title;
   final String content;
   final String? category;
+  final bool isFavorite;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -12,6 +13,7 @@ class Note {
     required this.title,
     required this.content,
     this.category,
+    this.isFavorite = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -21,6 +23,7 @@ class Note {
     String? title,
     String? content,
     String? category,
+    bool? isFavorite,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool clearCategory = false,
@@ -30,6 +33,7 @@ class Note {
       title: title ?? this.title,
       content: content ?? this.content,
       category: clearCategory ? null : (category ?? this.category),
+      isFavorite: isFavorite ?? this.isFavorite,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -41,6 +45,7 @@ class Note {
       'title': title,
       'content': content,
       'category': category,
+      'isFavorite': isFavorite,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -52,6 +57,7 @@ class Note {
       title: json['title'],
       content: json['content'],
       category: json['category'],
+      isFavorite: json['isFavorite'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );

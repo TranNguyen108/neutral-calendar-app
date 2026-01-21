@@ -8,6 +8,7 @@ import '../models/task.dart';
 import '../models/note.dart';
 import '../models/diary.dart';
 import '../models/event.dart';
+import '../models/daily_mood.dart'; // NEW: Daily mood model
 import '../utils/logger.dart';
 import 'data_validator.dart';
 
@@ -394,6 +395,28 @@ class StorageService extends GetxService {
     } catch (e) {
       _logger.error('Error setting language', tag: 'StorageService', error: e);
       // Don't throw - this is not critical
+    }
+  }
+
+  // AI API Key
+  String? getApiKey() {
+    try {
+      return _box.read('ai_api_key');
+    } catch (e) {
+      _logger.error('Error reading API key', tag: 'StorageService', error: e);
+      return null;
+    }
+  }
+
+  Future<void> setApiKey(String? value) async {
+    try {
+      if (value == null || value.isEmpty) {
+        await _box.remove('ai_api_key');
+      } else {
+        await _box.write('ai_api_key', value);
+      }
+    } catch (e) {
+      _logger.error('Error setting API key', tag: 'StorageService', error: e);
     }
   }
 
@@ -867,6 +890,133 @@ class StorageService extends GetxService {
     } catch (e) {
       _logger.error('Error deleting diary', tag: 'StorageService', error: e);
       throw Exception('Failed to delete diary: $e');
+    }
+  }
+
+  // ==================== DAILY MOODS (NEW) ====================
+  /// Storage key for daily moods
+  static const String _dailyMoodsKey = 'daily_moods';
+
+  /// Get all daily moods
+  List<DailyMood> getDailyMoods() {
+    try {
+      final moodsJson = _box.read<List>(_dailyMoodsKey) ?? [];
+      return moodsJson
+          .map((json) => DailyMood.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      _logger.error('Error loading daily moods',
+          tag: 'StorageService', error: e);
+      return [];
+    }
+  }
+
+  /// Save all daily moods
+  Future<void> saveDailyMoods(List<DailyMood> moods) async {
+    try {
+      await _box.write(
+        _dailyMoodsKey,
+        moods.map((m) => m.toJson()).toList(),
+      );
+    } catch (e) {
+      _logger.error('Error saving daily moods',
+          tag: 'StorageService', error: e);
+      throw Exception('Failed to save daily moods: $e');
+    }
+  }
+
+  /// Get daily mood for a specific date
+  /// Returns null if no daily mood exists for that date
+  DailyMood? getDailyMoodForDate(DateTime date) {
+    try {
+      final id = DailyMood.generateId(date);
+      final moods = getDailyMoods();
+      return moods.firstWhereOrNull((m) => m.id == id);
+    } catch (e) {
+      _logger.error('Error getting daily mood for date',
+          tag: 'StorageService', error: e);
+      return null;
+    }
+  }
+
+  /// Set or update daily mood for a specific date
+  /// If a daily mood already exists, it will be updated
+  Future<void> setDailyMood(DailyMood dailyMood) async {
+    try {
+      final moods = getDailyMoods();
+      final index = moods.indexWhere((m) => m.id == dailyMood.id);
+
+      if (index != -1) {
+        // Update existing
+        moods[index] = dailyMood.copyWith(updatedAt: DateTime.now());
+      } else {
+        // Add new
+        moods.add(dailyMood);
+      }
+
+      await saveDailyMoods(moods);
+      _logger.info('Daily mood set: ${dailyMood.id} - ${dailyMood.mood}',
+          tag: 'StorageService');
+    } catch (e) {
+      _logger.error('Error setting daily mood',
+          tag: 'StorageService', error: e);
+      throw Exception('Failed to set daily mood: $e');
+    }
+  }
+
+  /// Check if user has been prompted for daily mood today
+  /// This prevents showing the prompt multiple times per day
+  bool hasBeenPromptedToday() {
+    try {
+      final today = DateTime.now();
+      final key = 'mood_prompt_shown_${DailyMood.generateId(today)}';
+      return _box.read<bool>(key) ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Mark that user has been prompted today
+  Future<void> markPromptedToday() async {
+    try {
+      final today = DateTime.now();
+      final key = 'mood_prompt_shown_${DailyMood.generateId(today)}';
+      await _box.write(key, true);
+      print('📥 [STORAGE] Marked prompted for today: $key');
+    } catch (e) {
+      _logger.error('Error marking prompted today',
+          tag: 'StorageService', error: e);
+    }
+  }
+
+  /// Clear prompt state for today (for debugging)
+  Future<void> clearPromptedToday() async {
+    try {
+      final today = DateTime.now();
+      final key = 'mood_prompt_shown_${DailyMood.generateId(today)}';
+      await _box.remove(key);
+      print('🧹 [STORAGE] Cleared prompted state for today');
+    } catch (e) {
+      _logger.error('Error clearing prompted today',
+          tag: 'StorageService', error: e);
+    }
+  }
+
+  /// Get diaries for a specific date
+  /// Helper method used by mood detection logic
+  List<Diary> getDiariesForDate(DateTime date) {
+    try {
+      final allDiaries = getDiaries();
+      return allDiaries.where((diary) {
+        return diary.date.year == date.year &&
+            diary.date.month == date.month &&
+            diary.date.day == date.day;
+      }).toList()
+        ..sort((a, b) => a.date.compareTo(b.date)); // Oldest first
+    } catch (e) {
+      _logger.error('Error getting diaries for date',
+          tag: 'StorageService', error: e);
+      return [];
     }
   }
 

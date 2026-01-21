@@ -26,6 +26,11 @@ class ManageController extends GetxController {
     if (selectedCategory.value == null) {
       return notes;
     }
+    // Filter by favorites
+    if (selectedCategory.value == '__favorites__') {
+      return notes.where((note) => note.isFavorite).toList();
+    }
+    // Filter by category
     return notes
         .where((note) => note.category == selectedCategory.value)
         .toList();
@@ -34,10 +39,20 @@ class ManageController extends GetxController {
   List<Diary> get filteredDiaries {
     final month = selectedMonth.value.month;
     final year = selectedMonth.value.year;
-    return diaries
+    final filtered = diaries
         .where((diary) => diary.date.month == month && diary.date.year == year)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+        .toList();
+
+    // Sắp xếp: ghim trước, sau đó theo ngày giảm dần
+    filtered.sort((a, b) {
+      // Nếu một cái ghim một cái không, ghim lên trước
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Cùng trạng thái ghim, sắp xếp theo ngày
+      return b.date.compareTo(a.date);
+    });
+
+    return filtered;
   }
 
   String get selectedMonthYear {
@@ -109,6 +124,28 @@ class ManageController extends GetxController {
     await _storage.deleteNote(noteId);
     loadData();
     Get.snackbar('success'.tr, 'note_deleted'.tr);
+  }
+
+  Future<void> toggleNoteFavorite(Note note) async {
+    final updatedNote = note.copyWith(isFavorite: !note.isFavorite);
+    final allNotes = _storage.getNotes();
+    final index = allNotes.indexWhere((n) => n.id == note.id);
+    if (index >= 0) {
+      allNotes[index] = updatedNote;
+      await _storage.saveNotes(allNotes);
+      loadData();
+    }
+  }
+
+  Future<void> toggleDiaryPin(Diary diary) async {
+    final updatedDiary = diary.copyWith(isPinned: !diary.isPinned);
+    final allDiaries = _storage.getDiaries();
+    final index = allDiaries.indexWhere((d) => d.id == diary.id);
+    if (index >= 0) {
+      allDiaries[index] = updatedDiary;
+      await _storage.saveDiaries(allDiaries);
+      loadData();
+    }
   }
 
   Future<void> deleteDiary(String diaryId) async {

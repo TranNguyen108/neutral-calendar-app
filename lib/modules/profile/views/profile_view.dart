@@ -62,6 +62,18 @@ class ProfileView extends GetView<ProfileController> {
                       },
                     )),
                 const Divider(height: 1),
+                Obx(() => ListTile(
+                      leading: const Icon(Icons.key),
+                      title: const Text('AI API Key (Groq)'),
+                      subtitle: Text(controller.isApiKeyConfigured.value
+                          ? '✅ Đã cấu hình'
+                          : '⚠️ Chưa cấu hình'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        _showApiKeyDialog(context);
+                      },
+                    )),
+                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.analytics),
                   title: Text('reports_analytics'.tr),
@@ -69,6 +81,16 @@ class ProfileView extends GetView<ProfileController> {
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
                     Get.toNamed(AppRoutes.report);
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.mood),
+                  title: const Text('Mood Tracker Statistics'),
+                  subtitle: const Text('View your mood history'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Get.toNamed(AppRoutes.moodStats);
                   },
                 ),
                 const Divider(height: 1),
@@ -302,6 +324,90 @@ class ProfileView extends GetView<ProfileController> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  void _showApiKeyDialog(BuildContext context) {
+    final TextEditingController textController = TextEditingController();
+    textController.text = controller.apiKey.value;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('🔑 Cấu hình AI API Key'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Để sử dụng tính năng AI, bạn cần API key từ Groq:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '1. Truy cập: https://console.groq.com/keys',
+                style: TextStyle(fontSize: 12, color: Colors.blue),
+              ),
+              const Text(
+                '2. Tạo API key mới',
+                style: TextStyle(fontSize: 12),
+              ),
+              const Text(
+                '3. Sao chép và dán vào đây',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                decoration: InputDecoration(
+                  labelText: 'Groq API Key',
+                  hintText: 'gsk_...',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => textController.clear(),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '💡 Groq free tier: 30 requests/minute',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          if (controller.isApiKeyConfigured.value)
+            TextButton(
+              onPressed: () {
+                Get.back();
+                controller.removeApiKey();
+              },
+              child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+            ),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+          if (controller.isApiKeyConfigured.value)
+            TextButton(
+              onPressed: () {
+                Get.back();
+                controller.testApiKey();
+              },
+              child: const Text('Kiểm tra'),
+            ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              controller.saveApiKey(textController.text);
+            },
+            child: const Text('Lưu'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showLanguagePicker(BuildContext context) {

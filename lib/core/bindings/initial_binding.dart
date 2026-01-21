@@ -9,6 +9,7 @@ import '../services/achievement_service.dart';
 import '../services/attachment_service.dart';
 import '../services/backup_service.dart';
 import '../services/behavior_logging_service.dart';
+import '../services/content_service.dart';
 import '../services/daily_summary_service.dart';
 import '../services/migration_service.dart';
 import '../services/motivational_service.dart';
@@ -76,15 +77,14 @@ class InitialBinding extends Bindings {
 
     // Now safe to initialize other services that depend on data
     Get.put(AttachmentService(), permanent: true);
+    Get.put(ContentService(), permanent: true);
     Get.put(RecurrenceService(), permanent: true);
     await Get.putAsync(() => NotificationService().init(), permanent: true);
 
-    // AI Service - Initialize with API key
+    // AI Service - Initialize with API key from storage or environment
     await Get.putAsync<AIService>(() async {
-      // TODO: Load API key from secure storage
-      // For now, must be set manually via AIService.setApiKey()
-      const apiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
-      return await AIService().init(apiKey: apiKey.isEmpty ? null : apiKey);
+      // API key will be loaded from storage in AIService.init()
+      return await AIService().init();
     }, permanent: true);
 
     Get.put(AchievementService(), permanent: true);

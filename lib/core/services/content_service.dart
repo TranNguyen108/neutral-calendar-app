@@ -13,10 +13,6 @@ class ContentService extends GetxService {
   final notes = <Note>[].obs;
   final diaries = <Diary>[].obs;
 
-  static const String _eventsKey = 'events';
-  static const String _notesKey = 'notes';
-  static const String _diariesKey = 'diaries';
-
   @override
   void onInit() {
     super.onInit();

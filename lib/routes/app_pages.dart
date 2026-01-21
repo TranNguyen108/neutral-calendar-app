@@ -2,6 +2,9 @@ import 'package:get/get.dart';
 
 import '../modules/ai_chat/controllers/ai_chat_controller.dart';
 import '../modules/ai_chat/views/ai_chat_view.dart';
+import '../modules/add_item/views/note_editor_screen.dart';
+import '../modules/profile/controllers/mood_stats_controller.dart';
+import '../modules/profile/views/mood_stats_view.dart';
 import '../modules/main/main_module.dart';
 import '../modules/projects/bindings/project_detail_binding.dart';
 import '../modules/projects/views/project_detail_view.dart';
@@ -39,6 +42,17 @@ class AppPages {
       page: () => const AIChatView(),
       binding: BindingsBuilder(() {
         Get.lazyPut<AIChatController>(() => AIChatController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.noteEditor,
+      page: () => const NoteEditorScreen(),
+    ),
+    GetPage(
+      name: AppRoutes.moodStats,
+      page: () => const MoodStatsView(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut<MoodStatsController>(() => MoodStatsController());
       }),
     ),
   ];

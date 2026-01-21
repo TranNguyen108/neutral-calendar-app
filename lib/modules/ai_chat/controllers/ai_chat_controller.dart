@@ -200,8 +200,6 @@ class AIChatController extends GetxController {
         messages.add(
             ChatMessage.ai(action.message ?? result.explanation ?? 'Done'));
         break;
-      default:
-        messages.add(ChatMessage.ai(action.message ?? 'Action executed'));
     }
   }
 
@@ -250,18 +248,12 @@ class AIChatController extends GetxController {
       final data = action.data;
       final title = data['title'] as String;
       final startDateStr = data['startDateTime'] as String?;
-      final endDateStr = data['endDateTime'] as String?;
       final location = data['location'] as String?;
       final description = data['description'] as String?;
 
       DateTime startDate = DateTime.now();
       if (startDateStr != null) {
         startDate = DateTime.parse(startDateStr);
-      }
-
-      DateTime endDate = startDate;
-      if (endDateStr != null) {
-        endDate = DateTime.parse(endDateStr);
       }
 
       final event = Event(
@@ -334,6 +326,7 @@ class AIChatController extends GetxController {
 
       final diary = Diary(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: data['title'] as String? ?? '',
         date: date,
         content: content,
         mood: mood,

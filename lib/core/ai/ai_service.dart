@@ -4,6 +4,7 @@ import 'ai_prompt_builder.dart';
 import 'ai_personal_assistant.dart';
 import 'ai_response_parser.dart';
 import 'ai_models.dart';
+import '../services/storage_service.dart';
 
 /// Main AI Service for handling AI operations
 class AIService extends GetxService {
@@ -15,23 +16,36 @@ class AIService extends GetxService {
   final isProcessing = false.obs;
 
   Future<AIService> init({String? apiKey}) async {
+    // Priority: 1. Passed parameter, 2. Storage, 3. Default
     _apiKey = apiKey ?? _getDefaultApiKey();
 
     if (_apiKey != null && _apiKey!.isNotEmpty) {
-      _client = GroqClient(_apiKey!); // 🆕 Changed to Groq
+      _client = GroqClient(_apiKey!);
       isInitialized.value = true;
     }
 
     return this;
   }
 
-  /// Get default API key (should be from secure storage in production)
+  /// Get default API key from storage or environment
   String? _getDefaultApiKey() {
-    // 🔑 Groq API Key
-    // TODO: Load from secure storage or environment variable
-    // For now, return null - must be set via setApiKey() or init(apiKey: ...)
-    // Get your API key from: https://console.groq.com/keys
-    // Groq free tier: 30 requests/minute, 14,400/day
+    // Try to load from storage first
+    try {
+      final storage = Get.find<StorageService>();
+      final storedKey = storage.getApiKey();
+      if (storedKey != null && storedKey.isNotEmpty) {
+        return storedKey;
+      }
+    } catch (e) {
+      // Storage not available yet during init
+    }
+
+    // Fall back to environment variable
+    const envKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+    if (envKey.isNotEmpty) {
+      return envKey;
+    }
+
     return null;
   }
 

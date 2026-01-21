@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 import '../controllers/manage_controller.dart';
 import 'package:intl/intl.dart';
 import '../../add_item/views/add_item_bottom_sheet.dart';
+import '../../add_item/controllers/add_item_controller.dart';
+import '../../../core/models/diary.dart';
+import '../../../core/constants/mood_constants.dart';
 
 class ManageView extends GetView<ManageController> {
   const ManageView({super.key});
@@ -214,8 +217,8 @@ class ManageView extends GetView<ManageController> {
 
   void _showAddDialog(BuildContext context, int tabIndex) {
     if (tabIndex == 0) {
-      // Show note form from AddItemBottomSheet
-      AddItemBottomSheet.showNoteForm();
+      // Navigate to Note Editor Screen
+      Get.toNamed('/note-editor');
     } else {
       // Show diary form from AddItemBottomSheet
       AddItemBottomSheet.showDiaryForm();
@@ -242,6 +245,8 @@ class ManageView extends GetView<ManageController> {
                 child: Row(
                   children: [
                     _buildCategoryChip('all'.tr, null, Colors.grey),
+                    _buildCategoryChip(
+                        '⭐ Yêu thích', '__favorites__', Colors.red),
                     ...controller.noteCategories.map(
                       (cat) =>
                           _buildCategoryChip(cat, cat, _getCategoryColor(cat)),
@@ -250,7 +255,7 @@ class ManageView extends GetView<ManageController> {
                 ),
               )),
         ),
-        // Compact notes list
+        // Grid notes list
         Expanded(
           child: Obx(() {
             final notes = controller.filteredNotes;
@@ -287,100 +292,134 @@ class ManageView extends GetView<ManageController> {
                 ),
               );
             }
-            return ListView.builder(
+            return GridView.builder(
               padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85,
+              ),
               itemCount: notes.length,
               itemBuilder: (context, index) {
                 final note = notes[index];
                 final categoryColor = note.category != null
                     ? _getCategoryColor(note.category!)
                     : Colors.grey;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Get.isDarkMode ? Colors.grey[850] : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: categoryColor.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Get.isDarkMode
-                            ? Colors.black.withValues(alpha: 0.2)
-                            : categoryColor.withValues(alpha: 0.06),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                return GestureDetector(
+                  onTap: () {}, // Tắt popup khi click
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Get.isDarkMode ? Colors.grey[850] : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: note.category != null
+                            ? categoryColor.withValues(alpha: 0.3)
+                            : (Get.isDarkMode
+                                ? Colors.grey[700]!
+                                : Colors.grey[300]!),
+                        width: 1.5,
                       ),
-                    ],
-                  ),
-                  child: ListTile(
-                    dense: true,
-                    onTap: () {}, // Tắt popup khi click
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Get.isDarkMode
+                              ? Colors.black.withValues(alpha: 0.3)
+                              : Colors.grey.withValues(alpha: 0.1),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    leading: Container(
-                      width: 4,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: categoryColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    title: Text(
-                      note.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: Get.isDarkMode ? Colors.white : Colors.grey[900],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: note.content.isNotEmpty
-                        ? Text(
-                            note.content,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Get.isDarkMode
-                                  ? Colors.grey[400]
-                                  : Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : null,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Stack(
                       children: [
-                        if (note.category != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: categoryColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              note.category!,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: categoryColor.withValues(alpha: 1.0),
-                                fontWeight: FontWeight.w600,
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title
+                              Text(
+                                note.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Get.isDarkMode
+                                      ? Colors.white
+                                      : Colors.grey[900],
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
+                              const SizedBox(height: 8),
+                              // Content
+                              Expanded(
+                                child: Text(
+                                  note.content,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Get.isDarkMode
+                                        ? Colors.grey[400]
+                                        : Colors.grey[600],
+                                  ),
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Category tag
+                              if (note.category != null)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        categoryColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    note.category!,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: categoryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          color: Colors.red.shade400,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => controller.deleteNote(note.id),
+                        ),
+                        // Favorite button - top right
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: IconButton(
+                            icon: Icon(
+                              note.isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 20,
+                            ),
+                            color: note.isFavorite ? Colors.red : Colors.grey,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () =>
+                                controller.toggleNoteFavorite(note),
+                          ),
+                        ),
+                        // Delete button - bottom right
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            color: Colors.red.shade400,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => controller.deleteNote(note.id),
+                          ),
                         ),
                       ],
                     ),
@@ -397,7 +436,7 @@ class ManageView extends GetView<ManageController> {
   Widget _buildDiaryTab() {
     return Column(
       children: [
-        // Horizontal scrollable month selector - 5 tháng cố định
+        // Horizontal month selector - fixed at top, responsive full width
         Container(
           height: 100,
           decoration: BoxDecoration(
@@ -417,94 +456,141 @@ class ManageView extends GetView<ManageController> {
             ),
           ),
           child: Obx(() {
-            final currentMonth = controller.selectedMonth.value;
-            // Generate 5 tháng: 2 trước, tháng hiện tại, 2 sau
-            final months = List.generate(5, (index) {
+            final selectedMonth = controller.selectedMonth.value;
+            final now = DateTime.now();
+            final currentMonth = DateTime(now.year, now.month);
+
+            // Generate 24 tháng: 12 trước, tháng hiện tại, 11 sau
+            final months = List.generate(24, (index) {
               return DateTime(
                 currentMonth.year,
-                currentMonth.month - 2 + index,
+                currentMonth.month - 12 + index,
               );
             });
 
-            return ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              itemCount: months.length,
-              itemBuilder: (context, index) {
-                final month = months[index];
-                final isSelected = month.month == currentMonth.month &&
-                    month.year == currentMonth.year;
-                return GestureDetector(
-                  onTap: () => controller.setMonth(month),
-                  child: Container(
-                    width: 80,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? LinearGradient(
-                              colors: [
-                                Colors.green.shade400,
-                                Colors.green.shade600,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isSelected
-                          ? null
-                          : Get.isDarkMode
-                              ? Colors.grey[800]
-                              : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: Colors.green.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+            // Tính toán scroll position để center tháng được chọn
+            final selectedIndex = months.indexWhere((m) =>
+                m.month == selectedMonth.month && m.year == selectedMonth.year);
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // Mỗi tháng rộng 90px + 8px margin = 98px
+                // Chỉ hiển thị khoảng 5 tháng trong viewport
+                const itemWidth = 98.0;
+
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  itemCount: months.length,
+                  controller: selectedIndex >= 0
+                      ? ScrollController(
+                          initialScrollOffset: (selectedIndex - 2) * itemWidth)
+                      : null,
+                  itemBuilder: (context, index) {
+                    final month = months[index];
+                    final isSelected = month.month == selectedMonth.month &&
+                        month.year == selectedMonth.year;
+                    final isCurrent = month.month == currentMonth.month &&
+                        month.year == currentMonth.year;
+
+                    return GestureDetector(
+                      onTap: () => controller.setMonth(month),
+                      child: Container(
+                        width: 90,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          gradient: isCurrent
+                              ? LinearGradient(
+                                  colors: [
+                                    Colors.green.shade400,
+                                    Colors.green.shade600,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                              : null,
+                          color: isCurrent
+                              ? null
+                              : isSelected
+                                  ? (Get.isDarkMode
+                                      ? Colors.blue.shade800
+                                      : Colors.blue.shade100)
+                                  : (Get.isDarkMode
+                                      ? Colors.grey[800]
+                                      : Colors.grey[100]),
+                          borderRadius: BorderRadius.circular(12),
+                          border: isSelected && !isCurrent
+                              ? Border.all(
+                                  color: Colors.blue.shade400,
+                                  width: 2,
+                                )
+                              : null,
+                          boxShadow: isCurrent
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.green.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color:
+                                            Colors.blue.withValues(alpha: 0.2),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              DateFormat('MMM').format(month),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isCurrent
+                                    ? Colors.white
+                                    : isSelected
+                                        ? (Get.isDarkMode
+                                            ? Colors.blue.shade300
+                                            : Colors.blue.shade700)
+                                        : (Get.isDarkMode
+                                            ? Colors.grey[300]
+                                            : Colors.grey[700]),
                               ),
-                            ]
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          DateFormat('MMM').format(month),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? Colors.white
-                                : Get.isDarkMode
-                                    ? Colors.grey[300]
-                                    : Colors.grey[700],
-                          ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              month.year.toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isCurrent
+                                    ? Colors.white.withValues(alpha: 0.9)
+                                    : isSelected
+                                        ? (Get.isDarkMode
+                                            ? Colors.blue.shade200
+                                            : Colors.blue.shade600)
+                                        : (Get.isDarkMode
+                                            ? Colors.grey[500]
+                                            : Colors.grey[600]),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          month.year.toString(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.9)
-                                : Get.isDarkMode
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             );
           }),
         ),
-        // Diary list
+        // Diary grid - scrollable
         Expanded(
           child: Obx(() {
             final diaries = controller.filteredDiaries;
@@ -541,147 +627,311 @@ class ManageView extends GetView<ManageController> {
                 ),
               );
             }
-            return ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: diaries.length,
-              itemBuilder: (context, index) {
-                final diary = diaries[index];
-                return GestureDetector(
-                  onTap: () {}, // Tắt popup khi click
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Get.isDarkMode ? Colors.grey[850]! : Colors.white,
-                          Get.isDarkMode
-                              ? Colors.grey[900]!
-                              : Colors.green.withValues(alpha: 0.03),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Get.isDarkMode
-                              ? Colors.black.withValues(alpha: 0.2)
-                              : Colors.green.withValues(alpha: 0.08),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
+
+            // Tách diary thành 2 nhóm: đã ghim và chưa ghim
+            final pinnedDiaries = diaries.where((d) => d.isPinned).toList();
+            final unpinnedDiaries = diaries.where((d) => !d.isPinned).toList();
+
+            return CustomScrollView(
+              slivers: [
+                // Khu vực diary đã ghim
+                if (pinnedDiaries.isNotEmpty) ...[
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    sliver: SliverToBoxAdapter(
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Date badge
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.green.shade400,
-                                  Colors.green.shade600,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  '${diary.date.day}',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                Text(
-                                  DateFormat('MMM').format(diary.date),
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Icon(
+                            Icons.push_pin,
+                            size: 18,
+                            color: Colors.green.shade600,
                           ),
-                          const SizedBox(width: 12),
-                          // Content
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  diary.title,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    color: Get.isDarkMode
-                                        ? Colors.white
-                                        : Colors.grey[900],
-                                  ),
-                                ),
-                                if (diary.content.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    diary.content,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Get.isDarkMode
-                                          ? Colors.grey[400]
-                                          : Colors.grey[600],
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                                if (diary.showTime) ...[
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.access_time,
-                                        size: 12,
-                                        color: Colors.green.shade600,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        DateFormat('HH:mm').format(diary.date),
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.green.shade600,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
+                          const SizedBox(width: 8),
+                          Text(
+                            'Đã ghim (${pinnedDiaries.length})',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Get.isDarkMode
+                                  ? Colors.grey[300]
+                                  : Colors.grey[700],
                             ),
-                          ),
-                          // Delete button
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 18),
-                            color: Colors.red.shade400,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () => controller.deleteDiary(diary.id),
                           ),
                         ],
                       ),
                     ),
                   ),
-                );
-              },
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.85,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final diary = pinnedDiaries[index];
+                          return _buildDiaryCard(diary);
+                        },
+                        childCount: pinnedDiaries.length,
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Khu vực diary thường
+                if (unpinnedDiaries.isNotEmpty) ...[
+                  if (pinnedDiaries.isNotEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                      sliver: SliverToBoxAdapter(
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.article_outlined,
+                              size: 18,
+                              color: Get.isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Nhật ký (${unpinnedDiaries.length})',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Get.isDarkMode
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.85,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final diary = unpinnedDiaries[index];
+                          return _buildDiaryCard(diary);
+                        },
+                        childCount: unpinnedDiaries.length,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             );
           }),
         ),
       ],
+    );
+  }
+
+  Widget _buildDiaryCard(Diary diary) {
+    return GestureDetector(
+      onTap: () => _editDiary(diary), // Click to edit diary
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: diary.backgroundColor ??
+                  (Get.isDarkMode ? Colors.grey[850] : Colors.white),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Get.isDarkMode
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.green.withValues(alpha: 0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Date badge with mood emoji
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.green.shade400,
+                              Colors.green.shade600,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${diary.date.day}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              DateFormat('MMM').format(diary.date),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Mood emoji
+                      Text(
+                        MoodConstants.getEmojiForMood(diary.mood),
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Title
+                  Text(
+                    diary.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Get.isDarkMode ? Colors.white : Colors.grey[900],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  // Content
+                  if (diary.content.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Flexible(
+                      child: Text(
+                        diary.content,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Get.isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[600],
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  // Time
+                  if (diary.showTime) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 12,
+                          color: Colors.green.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('HH:mm').format(diary.date),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // Pin button - top right
+          Positioned(
+            top: 8,
+            right: 8,
+            child: InkWell(
+              onTap: () => controller.toggleDiaryPin(diary),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Get.isDarkMode
+                      ? Colors.grey[800]?.withValues(alpha: 0.9)
+                      : Colors.white.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  diary.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  size: 16,
+                  color: diary.isPinned
+                      ? Colors.green.shade600
+                      : (Get.isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+                ),
+              ),
+            ),
+          ),
+          // Delete button - bottom right
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: InkWell(
+              onTap: () => controller.deleteDiary(diary.id),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Get.isDarkMode
+                      ? Colors.grey[800]?.withValues(alpha: 0.9)
+                      : Colors.white.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.delete_outline,
+                  size: 16,
+                  color: Colors.red.shade400,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -721,5 +971,16 @@ class ManageView extends GetView<ManageController> {
         ),
       );
     });
+  }
+
+  // Edit diary using popup dialog
+  void _editDiary(Diary diary) {
+    // Get or create AddItemController
+    final addItemController = Get.isRegistered<AddItemController>()
+        ? Get.find<AddItemController>()
+        : Get.put(AddItemController());
+
+    // Show edit dialog popup
+    addItemController.showDiaryEditDialog(diary);
   }
 }
